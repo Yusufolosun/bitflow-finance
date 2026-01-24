@@ -5,6 +5,11 @@ authors = []
 telemetry = false
 cache_dir = "./.cache"
 
+[contracts.vault-core]
+path = "contracts/vault-core.clar"
+clarity_version = 2
+epoch = 2.5
+
 # [contracts.counter]
 # path = "contracts/counter.clar"
 # epoch = "latest"
