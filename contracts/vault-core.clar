@@ -7,6 +7,7 @@
 (define-constant ERR-ALREADY-HAS-LOAN (err u103))
 (define-constant ERR-LOAN-NOT-FOUND (err u104))
 (define-constant ERR-INSUFFICIENT-COLLATERAL (err u105))
+(define-constant ERR-NO-ACTIVE-LOAN (err u106))
 
 ;; Constants
 (define-constant MIN-COLLATERAL-RATIO u150)
@@ -15,6 +16,14 @@
 (define-map user-deposits principal uint)
 (define-map user-loans principal { amount: uint, interest-rate: uint, term-end: uint })
 (define-data-var total-deposits uint u0)
+(define-data-var total-repaid uint u0)
+
+;; Private functions
+
+;; Calculate interest based on principal, rate, and blocks elapsed
+(define-private (calculate-interest (principal uint) (rate uint) (blocks-elapsed uint))
+  (/ (* (* principal rate) blocks-elapsed) (* u100 u52560))
+)
 
 ;; Read-only functions
 
@@ -36,6 +45,29 @@
 ;; Calculate required collateral for a borrow amount
 (define-read-only (calculate-required-collateral (borrow-amount uint))
   (/ (* borrow-amount MIN-COLLATERAL-RATIO) u100)
+)
+
+;; Get total amount repaid across all loans
+(define-read-only (get-total-repaid)
+  (var-get total-repaid)
+)
+
+;; Get repayment amount for a user's loan
+(define-read-only (get-repayment-amount (user principal))
+  (match (map-get? user-loans user)
+    loan
+      (let (
+        (term-blocks (* (get interest-rate loan) u144))
+        (blocks-elapsed (if (> block-height (get term-end loan))
+                          (- (get term-end loan) (- (get term-end loan) term-blocks))
+                          (- block-height (- (get term-end loan) term-blocks))))
+        (interest (calculate-interest (get amount loan) (get interest-rate loan) blocks-elapsed))
+        (total (+ (get amount loan) interest))
+      )
+        (some { principal: (get amount loan), interest: interest, total: total })
+      )
+    none
+  )
 )
 
 ;; Public functions
@@ -87,5 +119,30 @@
     })
     
     (ok true)
+  )
+)
+
+;; Repay an active loan
+(define-public (repay)
+  (let (
+    (loan (unwrap! (map-get? user-loans tx-sender) ERR-NO-ACTIVE-LOAN))
+    (loan-amount (get amount loan))
+    (term-blocks (* (get interest-rate loan) u144))
+    (loan-start (- (get term-end loan) term-blocks))
+    (blocks-elapsed (- block-height loan-start))
+    (interest (calculate-interest loan-amount (get interest-rate loan) blocks-elapsed))
+    (total-repayment (+ loan-amount interest))
+  )
+    ;; Transfer repayment from user to contract
+    (try! (stx-transfer? total-repayment tx-sender (as-contract tx-sender)))
+    
+    ;; Delete the loan
+    (map-delete user-loans tx-sender)
+    
+    ;; Update total repaid
+    (var-set total-repaid (+ (var-get total-repaid) total-repayment))
+    
+    ;; Return repayment details
+    (ok { principal: loan-amount, interest: interest, total: total-repayment })
   )
 )
