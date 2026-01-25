@@ -94,6 +94,15 @@
   (var-get total-liquidations)
 )
 
+;; Get protocol statistics
+(define-read-only (get-protocol-stats)
+  {
+    total-deposits: (var-get total-deposits),
+    total-repaid: (var-get total-repaid),
+    total-liquidations: (var-get total-liquidations)
+  }
+)
+
 ;; Calculate health factor for a user's loan
 (define-read-only (calculate-health-factor (user principal) (stx-price uint))
   (match (map-get? user-loans user)
