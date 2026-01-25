@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  bitflow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bitflow-finance
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/frontend/node_modules
+    ports:
+      - "3000:3000"    # Frontend development server
+      - "20443:20443"  # Stacks API
+    environment:
+      - NODE_ENV=development
+      - VITE_NETWORK=testnet
+    working_dir: /app
+    command: bash
+    stdin_open: true
+    tty: true
+    networks:
+      - bitflow-network
+
+  # Optional: Add a local Stacks node for testing
+  # stacks-node:
+  #   image: blockstack/stacks-blockchain
+  #   ports:
+  #     - "20443:20443"
+  #     - "20444:20444"
+  #   networks:
+  #     - bitflow-network
+
+networks:
+  bitflow-network:
+    driver: bridge
