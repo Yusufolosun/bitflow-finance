@@ -35,6 +35,8 @@ export interface UserLoan {
   termEnd: number;
   /** Loan duration in days (calculated) */
   durationDays: number;
+  /** Timestamp when loan started (in seconds) */
+  startTimestamp: number;
   /** Collateral locked for this loan */
   collateralAmount: bigint;
   /** Collateral in STX */

@@ -27,7 +27,7 @@ import { UserSession } from '@stacks/connect';
  * Custom hook for vault operations
  * Handles all interactions with the vault-core contract
  */
-export const useVault = (userSession: UserSession, userAddress: string | null) => {
+export const useVault = (_userSession: UserSession, userAddress: string | null) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,14 +49,14 @@ export const useVault = (userSession: UserSession, userAddress: string | null) =
     try {
       const amountMicroSTX = stxToMicroStx(amountSTX);
 
-      const result = await openContractCall({
+      await openContractCall({
         network,
         contractAddress,
         contractName,
         functionName: 'deposit',
         functionArgs: [uintCV(amountMicroSTX)],
         postConditions: [],
-        onFinish: (data) => {
+        onFinish: (data: any) => {
           console.log('Deposit transaction:', data.txId);
         },
         onCancel: () => {
@@ -65,7 +65,7 @@ export const useVault = (userSession: UserSession, userAddress: string | null) =
       });
 
       setIsLoading(false);
-      return { success: true, txId: result.txId };
+      return { success: true, txId: 'pending' };
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to deposit';
       setError(errorMsg);
@@ -88,23 +88,23 @@ export const useVault = (userSession: UserSession, userAddress: string | null) =
     try {
       const amountMicroSTX = stxToMicroStx(amountSTX);
 
-      const result = await openContractCall({
+      await openContractCall({
         network,
         contractAddress,
         contractName,
         functionName: 'withdraw',
         functionArgs: [uintCV(amountMicroSTX)],
         postConditions: [],
-        onFinish: (data) => {
-          console.log('Withdraw transaction:', data.txId);
+        onFinish: (data: any) => {
+          console.log('Withdrawal transaction:', data.txId);
         },
         onCancel: () => {
-          console.log('Withdraw cancelled');
+          console.log('Withdrawal cancelled');
         },
       });
 
       setIsLoading(false);
-      return { success: true, txId: result.txId };
+      return { success: true, txId: 'pending' };
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to withdraw';
       setError(errorMsg);
@@ -132,7 +132,7 @@ export const useVault = (userSession: UserSession, userAddress: string | null) =
       const amountMicroSTX = stxToMicroStx(amountSTX);
       const interestRateBPS = interestRatePercent * 100; // Convert to basis points
 
-      const result = await openContractCall({
+      await openContractCall({
         network,
         contractAddress,
         contractName,
@@ -143,7 +143,7 @@ export const useVault = (userSession: UserSession, userAddress: string | null) =
           uintCV(termDays),
         ],
         postConditions: [],
-        onFinish: (data) => {
+        onFinish: (data: any) => {
           console.log('Borrow transaction:', data.txId);
         },
         onCancel: () => {
@@ -152,7 +152,7 @@ export const useVault = (userSession: UserSession, userAddress: string | null) =
       });
 
       setIsLoading(false);
-      return { success: true, txId: result.txId };
+      return { success: true, txId: 'pending' };
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to borrow';
       setError(errorMsg);
@@ -173,23 +173,23 @@ export const useVault = (userSession: UserSession, userAddress: string | null) =
     setError(null);
 
     try {
-      const result = await openContractCall({
+      await openContractCall({
         network,
         contractAddress,
         contractName,
         functionName: 'repay',
         functionArgs: [],
         postConditions: [],
-        onFinish: (data) => {
-          console.log('Repay transaction:', data.txId);
+        onFinish: (data: any) => {
+          console.log('Repayment transaction:', data.txId);
         },
         onCancel: () => {
-          console.log('Repay cancelled');
+          console.log('Repayment cancelled');
         },
       });
 
       setIsLoading(false);
-      return { success: true, txId: result.txId };
+      return { success: true, txId: 'pending' };
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to repay';
       setError(errorMsg);
@@ -270,6 +270,10 @@ export const useVault = (userSession: UserSession, userAddress: string | null) =
         const collateralAmount = (amount * BigInt(PROTOCOL_CONSTANTS.MIN_COLLATERAL_RATIO)) / BigInt(100);
         const collateralAmountSTX = microStxToStx(collateralAmount);
 
+        // Estimate start timestamp (blocks are ~10 minutes apart)
+        const currentBlock = startBlock + Math.floor((Date.now() / 1000 - Date.now() / 1000) / 600);
+        const startTimestamp = Date.now() / 1000 - ((currentBlock - startBlock) * 600);
+
         return {
           amount,
           amountSTX,
@@ -278,6 +282,7 @@ export const useVault = (userSession: UserSession, userAddress: string | null) =
           startBlock,
           termEnd,
           durationDays,
+          startTimestamp,
           collateralAmount,
           collateralAmountSTX,
         };

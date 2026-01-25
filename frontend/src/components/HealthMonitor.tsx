@@ -16,7 +16,7 @@ export const HealthMonitor: React.FC = () => {
   const [healthFactor, setHealthFactor] = useState<any>(null);
   const [userDeposit, setUserDeposit] = useState<any>(null);
   const [activeLoan, setActiveLoan] = useState<any>(null);
-  const [stxPrice, setStxPrice] = useState(1.5); // Default STX price in USD
+  const [stxPrice] = useState(1.5); // Default STX price in USD
 
   // Fetch user data
   useEffect(() => {
