@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Primary Meta Tags -->
+    <title>BitFlow Finance - Decentralized Lending on Stacks</title>
+    <meta name="title" content="BitFlow Finance - Decentralized Lending on Stacks" />
+    <meta name="description" content="Secure DeFi lending protocol built on Stacks blockchain. Deposit STX, borrow against collateral, and earn yield with transparent smart contracts." />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bitflow.finance/" />
+    <meta property="og:title" content="BitFlow Finance - Decentralized Lending on Stacks" />
+    <meta property="og:description" content="Secure DeFi lending protocol built on Stacks blockchain. Deposit STX, borrow against collateral, and earn yield with transparent smart contracts." />
+    <meta property="og:image" content="/og-image.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://bitflow.finance/" />
+    <meta property="twitter:title" content="BitFlow Finance - Decentralized Lending on Stacks" />
+    <meta property="twitter:description" content="Secure DeFi lending protocol built on Stacks blockchain. Deposit STX, borrow against collateral, and earn yield with transparent smart contracts." />
+    <meta property="twitter:image" content="/twitter-image.png" />
+
+    <!-- Additional Meta Tags -->
+    <meta name="keywords" content="DeFi, Stacks, Bitcoin, STX, Lending, Borrowing, Crypto, Blockchain, Smart Contracts" />
+    <meta name="author" content="BitFlow Finance Team" />
+    <meta name="theme-color" content="#3b82f6" />
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    
+    <style>
+      body {
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      
+      #root {
+        min-height: 100vh;
+      }
+      
+      /* Loading Screen */
+      .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.3s ease-out;
+      }
+      
+      .loading-screen.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 0.8s linear infinite;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+      <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- React Root -->
+    <div id="root"></div>
+    
+    <!-- Vite Module Script -->
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Remove Loading Screen after App Loads -->
+    <script>
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const loadingScreen = document.getElementById('loading-screen');
+          if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
+            setTimeout(() => {
+              loadingScreen.remove();
+            }, 300);
+          }
+        }, 500);
+      });
+    </script>
+  </body>
+</html>
