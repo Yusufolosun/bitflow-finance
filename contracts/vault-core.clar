@@ -103,6 +103,16 @@
   }
 )
 
+;; Get maximum borrow amount for a user based on their deposit
+(define-read-only (get-max-borrow-amount (user principal))
+  (let (
+    (user-deposit (default-to u0 (map-get? user-deposits user)))
+    (max-borrow (/ (* user-deposit u100) MIN-COLLATERAL-RATIO))
+  )
+    max-borrow
+  )
+)
+
 ;; Calculate health factor for a user's loan
 (define-read-only (calculate-health-factor (user principal) (stx-price uint))
   (match (map-get? user-loans user)
