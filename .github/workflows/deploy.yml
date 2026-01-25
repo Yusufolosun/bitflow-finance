@@ -24,9 +24,10 @@ jobs:
       
       - name: Install Clarinet
         run: |
-          wget -nv https://github.com/hirosystems/clarinet/releases/download/v2.10.0/clarinet-linux-x64.tar.gz
-          tar -xzf clarinet-linux-x64.tar.gz
-          sudo mv clarinet /usr/local/bin/
+          wget -nv https://github.com/hirosystems/clarinet/releases/download/v2.9.0/clarinet-linux-x64-glibc.tar.gz -O clarinet.tar.gz
+          tar -xzf clarinet.tar.gz
+          chmod +x ./clarinet
+          sudo mv ./clarinet /usr/local/bin/
           clarinet --version
       
       - name: Validate deployment environment
