@@ -73,6 +73,7 @@ jobs:
           path: |
             deployments/
             .clarinet/
+          if-no-files-found: ignore
       
       - name: Create deployment summary
         if: success()
