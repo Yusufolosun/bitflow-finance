@@ -22,6 +22,27 @@
 (define-data-var total-repaid uint u0)
 (define-data-var total-liquidations uint u0)
 
+;; Protocol-wide metrics
+(define-data-var total-deposits-count uint u0)
+(define-data-var total-withdrawals-count uint u0)
+(define-data-var total-borrows-count uint u0)
+(define-data-var total-repayments-count uint u0)
+(define-data-var total-liquidations-count uint u0)
+
+;; Volume metrics (in micro-STX)
+(define-data-var total-deposit-volume uint u0)
+(define-data-var total-borrow-volume uint u0)
+(define-data-var total-repay-volume uint u0)
+(define-data-var total-liquidation-volume uint u0)
+
+;; Time-based metrics
+(define-data-var last-activity-block uint u0)
+(define-data-var protocol-start-block uint u0)
+
+;; Contract owner for initialization
+(define-constant contract-owner tx-sender)
+(define-constant err-owner-only (err u109))
+
 ;; Private functions
 
 ;; Calculate interest based on principal, rate, and blocks elapsed
@@ -111,6 +132,12 @@
     (map-set user-deposits tx-sender 
       (+ (default-to u0 (map-get? user-deposits tx-sender)) amount))
     (var-set total-deposits (+ (var-get total-deposits) amount))
+    
+    ;; Update analytics
+    (var-set total-deposits-count (+ (var-get total-deposits-count) u1))
+    (var-set total-deposit-volume (+ (var-get total-deposit-volume) amount))
+    (var-set last-activity-block block-height)
+    
     (ok true)
   )
 )
@@ -125,6 +152,11 @@
     (try! (as-contract (stx-transfer? amount tx-sender recipient)))
     (map-set user-deposits recipient (- user-balance amount))
     (var-set total-deposits (- (var-get total-deposits) amount))
+    
+    ;; Update analytics
+    (var-set total-withdrawals-count (+ (var-get total-withdrawals-count) u1))
+    (var-set last-activity-block block-height)
+    
     (ok true)
   )
 )
@@ -150,6 +182,11 @@
       term-end: term-end
     })
     
+    ;; Update analytics
+    (var-set total-borrows-count (+ (var-get total-borrows-count) u1))
+    (var-set total-borrow-volume (+ (var-get total-borrow-volume) amount))
+    (var-set last-activity-block block-height)
+    
     (ok true)
   )
 )
@@ -171,6 +208,11 @@
     
     ;; Update total repaid
     (var-set total-repaid (+ (var-get total-repaid) total-repayment))
+    
+    ;; Update analytics
+    (var-set total-repayments-count (+ (var-get total-repayments-count) u1))
+    (var-set total-repay-volume (+ (var-get total-repay-volume) total-repayment))
+    (var-set last-activity-block block-height)
     
     ;; Return repayment details
     (ok { principal: loan-amount, interest: interest, total: total-repayment })
@@ -210,7 +252,56 @@
     ;; Increment liquidation counter
     (var-set total-liquidations (+ (var-get total-liquidations) u1))
     
+    ;; Update analytics
+    (var-set total-liquidations-count (+ (var-get total-liquidations-count) u1))
+    (var-set total-liquidation-volume (+ (var-get total-liquidation-volume) borrower-deposit))
+    (var-set last-activity-block block-height)
+    
     ;; Return liquidation details
     (ok { seized-collateral: borrower-deposit, paid: total-to-pay, bonus: liquidation-bonus })
+  )
+)
+
+;; Analytics read-only functions
+
+;; Get protocol transaction metrics
+(define-read-only (get-protocol-metrics)
+  {
+    total-deposits: (var-get total-deposits-count),
+    total-withdrawals: (var-get total-withdrawals-count),
+    total-borrows: (var-get total-borrows-count),
+    total-repayments: (var-get total-repayments-count),
+    total-liquidations: (var-get total-liquidations-count)
+  }
+)
+
+;; Get protocol volume metrics
+(define-read-only (get-volume-metrics)
+  {
+    deposit-volume: (var-get total-deposit-volume),
+    borrow-volume: (var-get total-borrow-volume),
+    repay-volume: (var-get total-repay-volume),
+    liquidation-volume: (var-get total-liquidation-volume)
+  }
+)
+
+;; Get protocol age in blocks
+(define-read-only (get-protocol-age)
+  (- block-height (var-get protocol-start-block))
+)
+
+;; Get blocks since last activity
+(define-read-only (get-time-since-last-activity)
+  (- block-height (var-get last-activity-block))
+)
+
+;; Initialization function (can only be called once by contract owner)
+(define-public (initialize)
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+    (asserts! (is-eq (var-get protocol-start-block) u0) err-owner-only)
+    (var-set protocol-start-block block-height)
+    (var-set last-activity-block block-height)
+    (ok true)
   )
 )
