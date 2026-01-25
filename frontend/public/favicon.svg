@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Background Circle -->
+  <circle cx="32" cy="32" r="32" fill="#3B82F6"/>
+  
+  <!-- BitFlow Logo - Abstract Flow Design -->
+  <g transform="translate(16, 16)">
+    <!-- Top Wave -->
+    <path d="M 4 12 Q 10 8, 16 12 T 28 12" 
+          stroke="#FFFFFF" 
+          stroke-width="3" 
+          stroke-linecap="round" 
+          fill="none"/>
+    
+    <!-- Middle Wave -->
+    <path d="M 4 16 Q 10 12, 16 16 T 28 16" 
+          stroke="#60A5FA" 
+          stroke-width="3" 
+          stroke-linecap="round" 
+          fill="none"/>
+    
+    <!-- Bottom Wave -->
+    <path d="M 4 20 Q 10 16, 16 20 T 28 20" 
+          stroke="#93C5FD" 
+          stroke-width="3" 
+          stroke-linecap="round" 
+          fill="none"/>
+    
+    <!-- BF Text -->
+    <text x="16" y="30" 
+          font-family="Arial, sans-serif" 
+          font-size="12" 
+          font-weight="bold" 
+          fill="#FFFFFF" 
+          text-anchor="middle">BF</text>
+  </g>
+</svg>
