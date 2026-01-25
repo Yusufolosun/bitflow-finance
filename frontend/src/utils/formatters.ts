@@ -5,14 +5,15 @@
 
 /**
  * Format STX amount with proper decimals
- * @param amount - Amount in STX
+ * @param amount - Amount in STX (number or bigint)
  * @param decimals - Number of decimal places (default: 2)
  * @returns Formatted string
  */
-export function formatSTX(amount: number, decimals: number = 2): string {
-  if (amount === 0) return '0.00';
-  if (amount < 0.01) return '<0.01';
-  return amount.toLocaleString('en-US', {
+export function formatSTX(amount: number | bigint, decimals: number = 2): string {
+  const numAmount = typeof amount === 'bigint' ? Number(amount) : amount;
+  if (numAmount === 0) return '0.00';
+  if (numAmount < 0.01) return '<0.01';
+  return numAmount.toLocaleString('en-US', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
