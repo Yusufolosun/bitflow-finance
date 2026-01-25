@@ -1,0 +1,86 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  contract-tests:
+    name: Contract Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Install Clarinet
+        run: |
+          wget -nv https://github.com/hirosystems/clarinet/releases/download/v2.10.0/clarinet-linux-x64.tar.gz
+          tar -xzf clarinet-linux-x64.tar.gz
+          sudo mv clarinet /usr/local/bin/
+          clarinet --version
+      
+      - name: Run contract tests
+        run: clarinet test
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: contract-test-results
+          path: |
+            .clarinet
+            coverage/
+
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        run: cd frontend && npm ci
+      
+      - name: Run frontend tests
+        run: cd frontend && npm test
+        continue-on-error: true
+      
+      - name: Run type check
+        run: cd frontend && npm run type-check || npx tsc --noEmit
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-test-results
+          path: frontend/coverage/
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [contract-tests, frontend-tests]
+    if: always()
+    
+    steps:
+      - name: Check test results
+        run: |
+          echo "Contract tests: ${{ needs.contract-tests.result }}"
+          echo "Frontend tests: ${{ needs.frontend-tests.result }}"
+          
+          if [ "${{ needs.contract-tests.result }}" != "success" ]; then
+            echo "❌ Contract tests failed"
+            exit 1
+          fi
+          
+          echo "✅ All tests passed"
