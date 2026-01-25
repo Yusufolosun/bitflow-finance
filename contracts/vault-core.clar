@@ -1,5 +1,12 @@
-;; vault-core
-;; A simple STX vault that allows users to deposit and withdraw STX
+;; Title: BitFlow Finance - Vault Core
+;; Version: 1.0.0
+;; Author: BitFlow Team
+;; License: MIT
+;; Description: Bitcoin-native fixed-rate lending protocol with
+;;              fixed interest rates and liquidation protection.
+;;              Users can deposit STX as collateral, borrow against it,
+;;              and earn yield. Implements 150% collateralization ratio
+;;              with automated liquidations at 110% health threshold.
 
 ;; Error codes
 (define-constant ERR-INSUFFICIENT-BALANCE (err u101))
