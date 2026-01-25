@@ -385,7 +385,7 @@
       ),
       health-factor: (match loan-data
         loan-info (calculate-health-factor user stx-price)
-        u200 ;; No loan = 200% health (max safe)
+        (some u200) ;; No loan = 200% health (max safe)
       ),
       is-liquidatable: (match loan-data
         loan-info (is-liquidatable user stx-price)
