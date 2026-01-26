@@ -26,9 +26,9 @@ export const VAULT_CONTRACT = {
     contractName: 'vault-core',
   },
   
-  // Mainnet deployment address (update before mainnet launch)
+  // Mainnet deployment address
   mainnet: {
-    address: '', // Replace with actual mainnet deployment
+    address: 'SP1M46W6CVGAMH3ZJD3TKMY5KCY48HWAZK0DYG193',
     contractName: 'vault-core',
   },
 };
