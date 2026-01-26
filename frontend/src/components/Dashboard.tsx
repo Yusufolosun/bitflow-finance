@@ -41,35 +41,76 @@ export const Dashboard: React.FC = () => {
     };
 
     fetchProtocolStats();
-    const interval = setInterval(fetchProtocolStats, 30000);
-    return () => clearInterval(interval);
+    // Auto-refresh disabled to prevent rate limiting
+    // const interval = setInterval(fetchProtocolStats, 300000);
+    // return () => clearInterval(interval);
   }, []);
 
-  // Fetch user portfolio data
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (address) {
-        const deposit = await vault.getUserDeposit();
-        if (deposit) {
-          setUserDeposit(deposit.amountSTX);
-        }
+  // Fetch user portfolio data - DISABLED to prevent rate limiting
+  // Data will be fetched after user actions (deposits, borrows, etc.)
+  // useEffect(() => {
+  //   const fetchUserData = async () => {
+  //     if (address) {
+  //       console.log('Fetching user data for address:', address);
+  //       
+  //       const deposit = await vault.getUserDeposit();
+  //       if (deposit) {
+  //         console.log('User deposit:', deposit);
+  //         setUserDeposit(deposit.amountSTX);
+  //       }
+  //
+  //       const loan = await vault.getUserLoan();
+  //       console.log('User loan result:', loan);
+  //       setUserLoan(loan);
+  //
+  //       if (loan) {
+  //         console.log('Fetching health factor for loan:', loan);
+  //         const health = await vault.getHealthFactor(1.5);
+  //         if (health) {
+  //           console.log('Health factor:', health);
+  //           setUserHealthFactor(health.healthFactorPercent);
+  //         }
+  //       } else {
+  //         console.log('No active loan found');
+  //         setUserHealthFactor(null);
+  //       }
+  //     }
+  //   };
+  //
+  //   fetchUserData();
+  //   // Auto-refresh disabled to prevent rate limiting
+    // const interval = setInterval(fetchUserData, 60000);
+    // return () => clearInterval(interval);
+  // }, [address, vault]);
 
-        const loan = await vault.getUserLoan();
-        setUserLoan(loan);
-
-        if (loan) {
-          const health = await vault.getHealthFactor(1.5);
-          if (health) {
-            setUserHealthFactor(health.healthFactorPercent);
-          }
-        }
+  // Manual refresh function for user portfolio
+  const refreshUserData = async () => {
+    if (address) {
+      console.log('Manually refreshing user data for address:', address);
+      
+      const deposit = await vault.getUserDeposit();
+      if (deposit) {
+        console.log('User deposit:', deposit);
+        setUserDeposit(deposit.amountSTX);
       }
-    };
 
-    fetchUserData();
-    const interval = setInterval(fetchUserData, 15000);
-    return () => clearInterval(interval);
-  }, [address, vault]);
+      const loan = await vault.getUserLoan();
+      console.log('User loan result:', loan);
+      setUserLoan(loan);
+
+      if (loan) {
+        console.log('Fetching health factor for loan:', loan);
+        const health = await vault.getHealthFactor(1.5);
+        if (health) {
+          console.log('Health factor:', health);
+          setUserHealthFactor(health.healthFactorPercent);
+        }
+      } else {
+        console.log('No active loan found');
+        setUserHealthFactor(null);
+      }
+    }
+  };
 
   // Calculate utilization rate
   const utilizationRate = totalValueLocked > 0 
@@ -136,7 +177,18 @@ export const Dashboard: React.FC = () => {
         {/* User Portfolio */}
         {address && (
           <section className="mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Portfolio</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Your Portfolio</h2>
+              <button
+                onClick={refreshUserData}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh Data
+              </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <div className="text-sm text-gray-500 mb-2">Total Deposited</div>
