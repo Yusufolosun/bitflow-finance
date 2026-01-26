@@ -22,23 +22,26 @@ export const BorrowCard: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
 
   // Fetch user deposit and active loan
-  useEffect(() => {
-    const fetchData = async () => {
-      if (address) {
-        const deposit = await vault.getUserDeposit();
-        if (deposit) {
-          setUserDeposit(deposit.amountSTX);
-        }
-
-        const loan = await vault.getUserLoan();
-        setActiveLoan(loan);
-      }
-    };
-
-    fetchData();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
-  }, [address, vault]);
+  // Initial fetch removed to prevent API rate limiting
+  // Data will load after user actions
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     if (address) {
+  //       const deposit = await vault.getUserDeposit();
+  //       if (deposit) {
+  //         setUserDeposit(deposit.amountSTX);
+  //       }
+  //
+  //       const loan = await vault.getUserLoan();
+  //       setHasActiveLoan(!!loan);
+  //     }
+  //   };
+  //
+  //   fetchData();
+  //   // Auto-refresh disabled to prevent rate limiting
+  //   // const interval = setInterval(fetchData, 60000);
+  //   // return () => clearInterval(interval);
+  // }, [address, vault]);
 
   // Calculate maximum borrowable amount
   const maxBorrowSTX = userDeposit / (PROTOCOL_CONSTANTS.MIN_COLLATERAL_RATIO / 100);
