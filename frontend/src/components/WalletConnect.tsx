@@ -1,5 +1,5 @@
-import React from 'react';
-import { Wallet, LogOut } from 'lucide-react';
+import React, { useState } from 'react';
+import { Wallet, LogOut, RefreshCw } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 /**
@@ -13,8 +13,17 @@ export const WalletConnect: React.FC = () => {
     balanceSTX, 
     isLoading,
     connectWallet, 
-    disconnectWallet 
+    disconnectWallet,
+    refreshBalance,
   } = useAuth();
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshBalance();
+    setTimeout(() => setIsRefreshing(false), 1000);
+  };
 
   // Format address for display
   const formatAddress = (addr: string): string => {
@@ -53,11 +62,24 @@ export const WalletConnect: React.FC = () => {
   return (
     <div className="flex items-center gap-3">
       {/* Balance Display */}
-      <div className="px-4 py-2 bg-gray-100 rounded-lg">
-        <div className="text-xs text-gray-500">Balance</div>
-        <div className="text-sm font-semibold text-gray-900">
-          {formatBalance(balanceSTX)} STX
+      <div className="px-4 py-2 bg-gray-100 rounded-lg flex items-center gap-2">
+        <div>
+          <div className="text-xs text-gray-500">Balance</div>
+          <div className="text-sm font-semibold text-gray-900">
+            {formatBalance(balanceSTX)} STX
+          </div>
         </div>
+        <button
+          onClick={handleRefresh}
+          className="p-1 hover:bg-gray-200 rounded transition-colors"
+          title="Refresh Balance"
+          disabled={isRefreshing}
+        >
+          <RefreshCw 
+            size={16} 
+            className={`text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`}
+          />
+        </button>
       </div>
 
       {/* Address Display */}
