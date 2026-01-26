@@ -18,27 +18,29 @@ export const HealthMonitor: React.FC = () => {
   const [activeLoan, setActiveLoan] = useState<any>(null);
   const [stxPrice] = useState(1.5); // Default STX price in USD
 
-  // Fetch user data
-  useEffect(() => {
-    const fetchData = async () => {
-      if (address) {
-        const deposit = await vault.getUserDeposit();
-        setUserDeposit(deposit);
-
-        const loan = await vault.getUserLoan();
-        setActiveLoan(loan);
-
-        if (loan) {
-          const health = await vault.getHealthFactor(stxPrice);
-          setHealthFactor(health);
-        }
-      }
-    };
-
-    fetchData();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
-  }, [address, vault, stxPrice]);
+  // Fetch user data - DISABLED to prevent rate limiting
+  // Data will be fetched after user actions
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     if (address) {
+  //       const deposit = await vault.getUserDeposit();
+  //       setUserDeposit(deposit);
+  //
+  //       const loan = await vault.getUserLoan();
+  //       setActiveLoan(loan);
+  //
+  //       if (loan) {
+  //         const health = await vault.getHealthFactor(stxPrice);
+  //         setHealthFactor(health);
+  //       }
+  //     }
+  //   };
+  //
+  //   fetchData();
+  //   // Auto-refresh disabled to prevent rate limiting
+  //   // const interval = setInterval(fetchData, 60000);
+  //   // return () => clearInterval(interval);
+  // }, [address, vault, stxPrice]);
 
   // Calculate collateralization ratio
   const getCollateralRatio = () => {
