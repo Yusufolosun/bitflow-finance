@@ -31,9 +31,10 @@ build/
 .cache/
 deployments/
 *.deployment-plan.yaml
+contracts/vault-core-deploy.clar
 
-# CRITICAL: Never commit mainnet credentials
-settings/Mainnet.toml
+# Temporary/history files
+history.txt
 
 # Logs
 *.log
