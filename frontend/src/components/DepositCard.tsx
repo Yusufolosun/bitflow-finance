@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowDownCircle, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowDownCircle, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useVault } from '../hooks/useVault';
 import { formatSTX } from '../types/vault';
+import { getExplorerUrl } from '../config/contracts';
 
 /**
  * DepositCard Component
@@ -16,23 +17,25 @@ export const DepositCard: React.FC = () => {
   const [userDeposit, setUserDeposit] = useState(0);
   const [txStatus, setTxStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [lastTxId, setLastTxId] = useState<string | null>(null);
 
-  // Fetch user's current deposit
-  useEffect(() => {
-    const fetchDeposit = async () => {
-      if (address) {
-        const deposit = await vault.getUserDeposit();
-        if (deposit) {
-          setUserDeposit(deposit.amountSTX);
-        }
-      }
-    };
-
-    fetchDeposit();
-    // Refresh every 10 seconds
-    const interval = setInterval(fetchDeposit, 10000);
-    return () => clearInterval(interval);
-  }, [address, vault]);
+  // Fetch user's current deposit only after transactions
+  // Initial fetch removed to prevent API rate limiting
+  // useEffect(() => {
+  //   const fetchDeposit = async () => {
+  //     if (address) {
+  //       const deposit = await vault.getUserDeposit();
+  //       if (deposit) {
+  //         setUserDeposit(deposit.amountSTX);
+  //       }
+  //     }
+  //   };
+  //
+  //   fetchDeposit();
+  //   // Auto-refresh disabled to prevent rate limiting
+  //   // const interval = setInterval(fetchDeposit, 30000);
+  //   // return () => clearInterval(interval);
+  // }, [address, vault]);
 
   const handleDeposit = async () => {
     const amount = parseFloat(depositAmount);
@@ -44,8 +47,10 @@ export const DepositCard: React.FC = () => {
       return;
     }
 
+    console.log('Deposit attempt:', { amount, balanceSTX, hasEnough: amount <= balanceSTX });
+
     if (amount > balanceSTX) {
-      setErrorMessage('Insufficient balance');
+      setErrorMessage(`Insufficient balance. You have ${balanceSTX.toFixed(2)} STX, trying to deposit ${amount.toFixed(2)} STX`);
       setTxStatus('error');
       return;
     }
@@ -56,17 +61,33 @@ export const DepositCard: React.FC = () => {
     try {
       const result = await vault.deposit(amount);
 
-      if (result.success) {
-        setTxStatus('success');
-        setDepositAmount('');
-        // Refresh deposit after 5 seconds
-        setTimeout(async () => {
+      if (result.success && result.txId) {
+        console.log('Transaction submitted, waiting for confirmation...');
+        setLastTxId(result.txId);
+        setErrorMessage(`Transaction submitted: ${result.txId}`);
+        
+        // Wait for transaction confirmation
+        const confirmed = await vault.pollTransactionStatus(result.txId);
+        
+        if (confirmed) {
+          setTxStatus('success');
+          setDepositAmount('');
+          
+          // Refresh deposit immediately after confirmation
           const deposit = await vault.getUserDeposit();
           if (deposit) {
             setUserDeposit(deposit.amountSTX);
           }
-          setTxStatus('idle');
-        }, 5000);
+          
+          // Reset status after showing success message
+          setTimeout(() => {
+            setTxStatus('idle');
+            setErrorMessage('');
+          }, 5000);
+        } else {
+          setTxStatus('error');
+          setErrorMessage('Transaction failed or timed out. Check explorer for details.');
+        }
       } else {
         setTxStatus('error');
         setErrorMessage(result.error || 'Transaction failed');
@@ -150,18 +171,44 @@ export const DepositCard: React.FC = () => {
 
       {/* Status Messages */}
       {txStatus === 'success' && (
-        <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-          <CheckCircle className="text-green-600" size={20} />
-          <span className="text-sm text-green-700 font-medium">
-            Deposit successful! Updating balance...
-          </span>
+        <div className="p-3 bg-green-50 rounded-lg space-y-2">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="text-green-600" size={20} />
+            <span className="text-sm text-green-700 font-medium">
+              Deposit successful! Balance updated.
+            </span>
+          </div>
+          {lastTxId && (
+            <a
+              href={getExplorerUrl(lastTxId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-green-600 hover:text-green-700 hover:underline"
+            >
+              View transaction
+              <ExternalLink size={12} />
+            </a>
+          )}
         </div>
       )}
 
       {txStatus === 'error' && errorMessage && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
-          <XCircle className="text-red-600" size={20} />
-          <span className="text-sm text-red-700 font-medium">{errorMessage}</span>
+        <div className="p-3 bg-red-50 rounded-lg space-y-2">
+          <div className="flex items-center gap-2">
+            <XCircle className="text-red-600" size={20} />
+            <span className="text-sm text-red-700 font-medium">{errorMessage}</span>
+          </div>
+          {lastTxId && (
+            <a
+              href={getExplorerUrl(lastTxId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 hover:underline"
+            >
+              View transaction
+              <ExternalLink size={12} />
+            </a>
+          )}
         </div>
       )}
 
