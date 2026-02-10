@@ -26,10 +26,10 @@ export const VAULT_CONTRACT = {
     contractName: 'bitflow-vault-core',
   },
   
-  // Mainnet deployment address
+  // Mainnet deployment address (DEPLOYED: February 10, 2026)
   mainnet: {
     address: 'SP1M46W6CVGAMH3ZJD3TKMY5KCY48HWAZK0DYG193',
-    contractName: 'vault-core',
+    contractName: 'bitflow-vault-core',
   },
 };
 

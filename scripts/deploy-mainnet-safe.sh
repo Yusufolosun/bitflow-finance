@@ -41,7 +41,7 @@ clarinet deployments apply --mainnet
 # Save deployment info
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 echo "📋 Saving deployment info..."
-clarinet deployments generate --mainnet > deployments/mainnet_${TIMESTAMP}.yaml
+clarinet deployments generate --mainnet --low-cost > deployments/mainnet_${TIMESTAMP}.yaml
 
 echo ""
 echo "✅ DEPLOYMENT COMPLETE!"
