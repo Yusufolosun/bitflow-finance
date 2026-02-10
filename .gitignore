@@ -5,13 +5,23 @@ yarn-debug.log*
 yarn-error.log*
 package-lock.json
 
-# Environment variables
+# Environment variables (contains sensitive API keys and secrets)
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 *.env
+frontend/.env
+
+# Mainnet credentials (encrypted mnemonics and private keys)
+settings/
+settings/*.toml
+
+# Deployment receipts and logs (may contain transaction details)
+deployments/*.yaml
+deployments/mainnet_*.yaml
+*.deployment-plan.yaml
 
 # Build outputs
 dist/
