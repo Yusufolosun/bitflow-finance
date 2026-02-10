@@ -12,15 +12,19 @@
 (define-constant ERR-INSUFFICIENT-BALANCE (err u101))
 (define-constant ERR-INVALID-AMOUNT (err u102))
 (define-constant ERR-ALREADY-HAS-LOAN (err u103))
-(define-constant ERR-LOAN-NOT-FOUND (err u104))
 (define-constant ERR-INSUFFICIENT-COLLATERAL (err u105))
 (define-constant ERR-NO-ACTIVE-LOAN (err u106))
 (define-constant ERR-NOT-LIQUIDATABLE (err u107))
 (define-constant ERR-LIQUIDATE-OWN-LOAN (err u108))
+(define-constant ERR-INVALID-INTEREST-RATE (err u110))
+(define-constant ERR-INVALID-TERM (err u111))
 
 ;; Constants
 (define-constant MIN-COLLATERAL-RATIO u150)
 (define-constant LIQUIDATION-THRESHOLD u110)
+(define-constant MAX-INTEREST-RATE u10000) ;; 100% APR in basis points
+(define-constant MIN-TERM-DAYS u1)
+(define-constant MAX-TERM-DAYS u365) ;; Maximum 1 year loan term
 
 ;; Data maps
 (define-map user-deposits principal uint)
@@ -225,6 +229,12 @@
     (term-end (+ block-height (* term-days u144))) ;; ~144 blocks per day
     (recipient tx-sender)
   )
+    ;; Validate interest rate (must be <= 100% APR)
+    (asserts! (<= interest-rate MAX-INTEREST-RATE) ERR-INVALID-INTEREST-RATE)
+    
+    ;; Validate loan term (1 day to 1 year)
+    (asserts! (and (>= term-days MIN-TERM-DAYS) (<= term-days MAX-TERM-DAYS)) ERR-INVALID-TERM)
+    
     ;; Verify user doesn't already have an active loan (one loan per user)
     (asserts! (is-none (map-get? user-loans tx-sender)) ERR-ALREADY-HAS-LOAN)
     

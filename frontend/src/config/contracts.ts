@@ -18,12 +18,12 @@ export const getNetwork = () => NETWORK_CONFIG[ACTIVE_NETWORK];
 
 // Contract Details
 export const VAULT_CONTRACT = {
-  name: 'vault-core-v2', // Updated to v2 with critical borrow fix
+  name: 'bitflow-vault-core',
   
-  // Testnet deployment address (UPDATED: January 26, 2026)
+  // Testnet deployment address (UPDATED: February 10, 2026)
   testnet: {
-    address: 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM',
-    contractName: 'vault-core-v2', // v2 includes STX transfer fix in borrow function
+    address: 'ST1M46W6CVGAMH3ZJD3TKMY5KCY48HWAZK1GA0CF0',
+    contractName: 'bitflow-vault-core',
   },
   
   // Mainnet deployment address
