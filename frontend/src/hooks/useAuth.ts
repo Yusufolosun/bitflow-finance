@@ -129,41 +129,52 @@ export const useAuth = () => {
    * Refresh balance
    */
   const refreshBalance = useCallback(async () => {
-    // Use a ref-like approach by getting current state
-    setWalletState(prev => {
-      if (prev.address) {
-        // Trigger async balance fetch
-        fetchBalance(prev.address).then(balance => {
-          if (balance !== null) {
-            const balanceSTX = Number(balance) / 1_000_000;
-            setWalletState(current => ({
-              ...current,
-              balance,
-              balanceSTX,
-            }));
-          }
+    const currentState = walletState;
+    if (currentState.address) {
+      try {
+        console.log('Refreshing balance for:', currentState.address);
+        const balance = await fetchBalance(currentState.address);
+        if (balance !== null) {
+          const balanceSTX = Number(balance) / 1_000_000;
+          console.log('Balance refreshed:', balanceSTX, 'STX');
+          setWalletState(prev => ({
+            ...prev,
+            balance,
+            balanceSTX,
+          }));
+        } else {
+          console.warn('Balance fetch returned null, keeping existing balance');
+        }
+      } catch (error) {
+        console.error('Error refreshing balance:', error);
+      }
+    }
+  }, [walletState, fetchBalance]);
+
+  // Check if user is already signed in on mount
+  useEffect(() => {
+    const initializeAuth = async () => {
+      if (userSession.isUserSignedIn()) {
+        const userData = userSession.loadUserData();
+        const address = userData.profile.stxAddress[ACTIVE_NETWORK];
+        
+        // Fetch balance first
+        const balance = await fetchBalance(address);
+        const balanceSTX = balance !== null ? Number(balance) / 1_000_000 : 0;
+        
+        // Set complete state once with actual balance
+        setWalletState({
+          isConnected: true,
+          address,
+          balance: balance || BigInt(0),
+          balanceSTX,
         });
       }
-      return prev;
-    });
-  }, [fetchBalance]);
-
-  // Check if user is already signed in on mount - but don't fetch balance to prevent rate limiting
-  useEffect(() => {
-    if (userSession.isUserSignedIn()) {
-      const userData = userSession.loadUserData();
-      const address = userData.profile.stxAddress[ACTIVE_NETWORK];
-      
-      // Set connection state without fetching balance
-      setWalletState({
-        isConnected: true,
-        address,
-        balance: BigInt(0),
-        balanceSTX: 0,
-      });
-    }
-    setIsLoading(false);
-  }, [userSession]);
+      setIsLoading(false);
+    };
+    
+    initializeAuth();
+  }, [userSession, fetchBalance]);
 
   // Auto-refresh disabled to prevent rate limiting
   // Users can manually refresh using the refresh button

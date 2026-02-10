@@ -10,6 +10,7 @@ import {
   Pc,
   FungibleConditionCode,
   makeStandardSTXPostCondition,
+  makeContractSTXPostCondition,
 } from '@stacks/transactions';
 import { 
   UserDeposit, 
@@ -31,22 +32,31 @@ import { UserSession } from '@stacks/connect';
 /**
  * Poll transaction status until confirmed or failed
  */
-const pollTransactionStatus = async (txId: string, maxAttempts = 30): Promise<boolean> => {
+const pollTransactionStatus = async (txId: string, maxAttempts = 60): Promise<boolean> => {
   const apiUrl = getApiEndpoint();
   
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const response = await fetch(`${apiUrl}/extended/v1/tx/${txId}`);
+      
+      if (!response.ok) {
+        console.warn(`API returned status ${response.status}, retrying...`);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        continue;
+      }
+      
       const data = await response.json();
       
-      console.log(`Transaction status (attempt ${i + 1}):`, data.tx_status);
+      console.log(`Transaction status (attempt ${i + 1}/${maxAttempts}):`, data.tx_status);
       
       if (data.tx_status === 'success') {
+        console.log('Transaction confirmed successfully!');
         return true;
       }
       
       if (data.tx_status === 'abort_by_response' || data.tx_status === 'abort_by_post_condition') {
         console.error('Transaction failed:', data.tx_result);
+        console.error('Full transaction data:', data);
         return false;
       }
       
@@ -59,6 +69,7 @@ const pollTransactionStatus = async (txId: string, maxAttempts = 30): Promise<bo
   }
   
   // Timeout - transaction might still be pending
+  console.warn(`Transaction polling timed out after ${maxAttempts * 3} seconds`);
   return false;
 };
 
@@ -199,8 +210,7 @@ export const useVault = (_userSession: UserSession, userAddress: string | null) 
             uintCV(interestRateBPS),
             uintCV(termDays),
           ],
-          postConditions: [],
-          postConditionMode: PostConditionMode.Deny,
+          postConditionMode: PostConditionMode.Allow,
           onFinish: (data: any) => {
             console.log('Borrow transaction submitted:', data.txId);
             setIsLoading(false);
@@ -318,10 +328,18 @@ export const useVault = (_userSession: UserSession, userAddress: string | null) 
         senderAddress: userAddress,
       });
 
-      console.log('getUserLoan raw result:', result);
-      console.log('Result type:', result.type, 'Expected:', ClarityType.OptionalSome);
+      console.log('getUserLoan raw result:', JSON.stringify(result, (key, value) => 
+        typeof value === 'bigint' ? value.toString() : value, 2
+      ));
+      console.log('Result type:', result.type);
+      console.log('ClarityType enum:', { 
+        OptionalSome: ClarityType.OptionalSome, 
+        OptionalNone: ClarityType.OptionalNone 
+      });
 
-      if (result.type === ClarityType.OptionalSome) {
+      // Handle optional some (loan exists)
+      if (result.type === ClarityType.OptionalSome && result.value) {
+        console.log('Processing OptionalSome - loan exists');
         const loanData = cvToValue(result.value);
         console.log('Loan data:', loanData);
         
@@ -343,7 +361,7 @@ export const useVault = (_userSession: UserSession, userAddress: string | null) 
         const blocksElapsed = 0; // For now, assume loan just started
         const startTimestamp = Date.now() / 1000 - (blocksElapsed * 600);
 
-        return {
+        const loanResult = {
           amount,
           amountSTX,
           interestRate,
@@ -355,9 +373,18 @@ export const useVault = (_userSession: UserSession, userAddress: string | null) 
           collateralAmount,
           collateralAmountSTX,
         };
+        
+        console.log('Returning loan:', loanResult);
+        return loanResult;
       }
 
-      console.log('getUserLoan returning null - result type was:', result.type);
+      // Handle optional none (no loan)
+      if (result.type === ClarityType.OptionalNone) {
+        console.log('No active loan found (OptionalNone)');
+      } else {
+        console.log('Unexpected result type:', result.type);
+      }
+      
       return null;
     } catch (err) {
       console.error('Error fetching user loan:', err);

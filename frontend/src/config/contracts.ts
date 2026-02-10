@@ -18,12 +18,12 @@ export const getNetwork = () => NETWORK_CONFIG[ACTIVE_NETWORK];
 
 // Contract Details
 export const VAULT_CONTRACT = {
-  name: 'vault-core',
+  name: 'vault-core-v2', // Updated to v2 with critical borrow fix
   
-  // Testnet deployment address (update after deployment)
+  // Testnet deployment address (UPDATED: January 26, 2026)
   testnet: {
-    address: 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM', // Replace with actual testnet deployment
-    contractName: 'vault-core',
+    address: 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM',
+    contractName: 'vault-core-v2', // v2 includes STX transfer fix in borrow function
   },
   
   // Mainnet deployment address
