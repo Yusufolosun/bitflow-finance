@@ -1,12 +1,12 @@
 [project]
 name = "bitflow-core"
-description = ""
+description = "BitFlow Finance - Decentralized Lending Protocol (v2 with STX transfer fix)"
 authors = []
 telemetry = false
 cache_dir = "./.cache"
 
-[contracts.vault-core]
-path = "contracts/vault-core.clar"
+[contracts.bitflow-vault-core]
+path = "contracts/bitflow-vault-core.clar"
 clarity_version = 2
 epoch = 2.5
 
