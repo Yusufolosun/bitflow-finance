@@ -64,8 +64,8 @@ plan:
     - id: 0
       transactions:
         - emulated-contract-publish:
-            contract-name: vault-core
+            contract-name: bitflow-vault-core
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: contracts/vault-core.clar
+            path: contracts/bitflow-vault-core.clar
             clarity-version: 2
       epoch: "2.5"
