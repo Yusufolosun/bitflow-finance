@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { TrendingUp, AlertCircle, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useVault } from '../hooks/useVault';
 import { formatSTX, LOAN_TERMS } from '../types/vault';
-import { PROTOCOL_CONSTANTS } from '../config/contracts';
+import { PROTOCOL_CONSTANTS, getExplorerUrl } from '../config/contracts';
 
 /**
  * BorrowCard Component
  * Allows users to borrow STX against their deposited collateral
  */
 export const BorrowCard: React.FC = () => {
-  const { address, userSession } = useAuth();
+  const { address, userSession, refreshBalance } = useAuth();
   const vault = useVault(userSession, address);
 
   const [borrowAmount, setBorrowAmount] = useState('');
@@ -20,28 +20,25 @@ export const BorrowCard: React.FC = () => {
   const [activeLoan, setActiveLoan] = useState<any>(null);
   const [txStatus, setTxStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [lastTxId, setLastTxId] = useState<string | null>(null);
 
-  // Fetch user deposit and active loan
-  // Initial fetch removed to prevent API rate limiting
-  // Data will load after user actions
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     if (address) {
-  //       const deposit = await vault.getUserDeposit();
-  //       if (deposit) {
-  //         setUserDeposit(deposit.amountSTX);
-  //       }
-  //
-  //       const loan = await vault.getUserLoan();
-  //       setHasActiveLoan(!!loan);
-  //     }
-  //   };
-  //
-  //   fetchData();
-  //   // Auto-refresh disabled to prevent rate limiting
-  //   // const interval = setInterval(fetchData, 60000);
-  //   // return () => clearInterval(interval);
-  // }, [address, vault]);
+  // Fetch user deposit and active loan once on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      if (address) {
+        const deposit = await vault.getUserDeposit();
+        if (deposit) {
+          setUserDeposit(deposit.amountSTX);
+        }
+
+        const loan = await vault.getUserLoan();
+        setActiveLoan(loan);
+      }
+    };
+
+    fetchData();
+    // Auto-refresh disabled to prevent rate limiting
+  }, [address]); // Only re-fetch when address changes
 
   // Calculate maximum borrowable amount
   const maxBorrowSTX = userDeposit / (PROTOCOL_CONSTANTS.MIN_COLLATERAL_RATIO / 100);
@@ -82,18 +79,40 @@ export const BorrowCard: React.FC = () => {
 
     setTxStatus('pending');
     setErrorMessage('');
+    setLastTxId(null);
 
     try {
       const result = await vault.borrow(amount, interestRate, loanTerm);
 
-      if (result.success) {
-        setTxStatus('success');
-        setBorrowAmount('');
-        setTimeout(async () => {
+      if (result.success && result.txId) {
+        console.log('Borrow transaction submitted:', result.txId);
+        setLastTxId(result.txId);
+        setErrorMessage(`Transaction submitted. Waiting for confirmation...`);
+        
+        // Wait for transaction confirmation (up to 3 minutes)
+        const confirmed = await vault.pollTransactionStatus(result.txId);
+        
+        if (confirmed) {
+          setTxStatus('success');
+          setBorrowAmount('');
+          setErrorMessage('');
+          
+          // Refresh wallet balance to show received STX
+          console.log('Refreshing balance after successful borrow...');
+          await refreshBalance();
+          
+          // Refresh loan data
           const loan = await vault.getUserLoan();
           setActiveLoan(loan);
-          setTxStatus('idle');
-        }, 5000);
+          
+          // Reset status after showing success message
+          setTimeout(() => {
+            setTxStatus('idle');
+          }, 5000);
+        } else {
+          setTxStatus('error');
+          setErrorMessage('Transaction may have failed or is still pending. Click below to check the explorer.');
+        }
       } else {
         setTxStatus('error');
         setErrorMessage(result.error || 'Transaction failed');
@@ -275,18 +294,36 @@ export const BorrowCard: React.FC = () => {
 
       {/* Status Messages */}
       {txStatus === 'success' && (
-        <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-          <CheckCircle className="text-green-600" size={20} />
-          <span className="text-sm text-green-700 font-medium">
-            Loan created successfully!
-          </span>
+        <div className="p-3 bg-green-50 rounded-lg space-y-2">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="text-green-600" size={20} />
+            <span className="text-sm text-green-700 font-medium">
+              Loan created successfully! STX received.
+            </span>
+          </div>
+          <p className="text-xs text-green-600">
+            Tip: Click "Refresh Data" on the Dashboard to update your portfolio view.
+          </p>
         </div>
       )}
 
       {txStatus === 'error' && errorMessage && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
-          <XCircle className="text-red-600" size={20} />
-          <span className="text-sm text-red-700 font-medium">{errorMessage}</span>
+        <div className="p-3 bg-red-50 rounded-lg space-y-2">
+          <div className="flex items-center gap-2">
+            <XCircle className="text-red-600" size={20} />
+            <span className="text-sm text-red-700 font-medium">{errorMessage}</span>
+          </div>
+          {lastTxId && (
+            <a
+              href={getExplorerUrl(lastTxId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 hover:underline"
+            >
+              View transaction on explorer
+              <ExternalLink size={12} />
+            </a>
+          )}
         </div>
       )}
 

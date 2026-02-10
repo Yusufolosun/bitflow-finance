@@ -18,41 +18,38 @@ export const RepayCard: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [timeElapsed, setTimeElapsed] = useState('');
 
-  // Fetch active loan and repayment amount - DISABLED to prevent rate limiting
-  // Data will be fetched after user actions
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     if (address) {
-  //       const loan = await vault.getUserLoan();
-  //       setActiveLoan(loan);
-  //
-  //       if (loan) {
-  //         const repayment = await vault.getRepaymentAmount();
-  //         setRepaymentAmount(repayment);
-  //
-  //         // Calculate time elapsed
-  //         const now = Date.now() / 1000;
-  //         const elapsed = now - loan.startTimestamp;
-  //         const days = Math.floor(elapsed / 86400);
-  //         const hours = Math.floor((elapsed % 86400) / 3600);
-  //         const minutes = Math.floor((elapsed % 3600) / 60);
-  //
-  //         if (days > 0) {
-  //           setTimeElapsed(`${days}d ${hours}h`);
-  //         } else if (hours > 0) {
-  //           setTimeElapsed(`${hours}h ${minutes}m`);
-  //         } else {
-  //           setTimeElapsed(`${minutes}m`);
-  //         }
-  //       }
-  //     }
-  //   };
-  //
-  //   fetchData();
-  //   // Auto-refresh disabled to prevent rate limiting
-  //   // const interval = setInterval(fetchData, 60000);
-  //   // return () => clearInterval(interval);
-  // }, [address, vault]);
+  // Fetch active loan and repayment amount once on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      if (address) {
+        const loan = await vault.getUserLoan();
+        setActiveLoan(loan);
+
+        if (loan) {
+          const repayment = await vault.getRepaymentAmount();
+          setRepaymentAmount(repayment);
+
+          // Calculate time elapsed
+          const now = Date.now() / 1000;
+          const elapsed = now - loan.startTimestamp;
+          const days = Math.floor(elapsed / 86400);
+          const hours = Math.floor((elapsed % 86400) / 3600);
+          const minutes = Math.floor((elapsed % 3600) / 60);
+
+          if (days > 0) {
+            setTimeElapsed(`${days}d ${hours}h`);
+          } else if (hours > 0) {
+            setTimeElapsed(`${hours}h ${minutes}m`);
+          } else {
+            setTimeElapsed(`${minutes}m`);
+          }
+        }
+      }
+    };
+
+    fetchData();
+    // Auto-refresh disabled to prevent rate limiting
+  }, [address]); // Only re-fetch when address changes
 
   const handleRepay = async () => {
     if (!repaymentAmount) {

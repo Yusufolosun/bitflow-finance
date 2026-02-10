@@ -8,6 +8,7 @@ import { DepositCard } from './DepositCard';
 import { BorrowCard } from './BorrowCard';
 import { RepayCard } from './RepayCard';
 import { HealthMonitor } from './HealthMonitor';
+import { TransactionHistory } from './TransactionHistory';
 import { formatSTX } from '../utils/formatters';
 
 /**
@@ -28,6 +29,8 @@ export const Dashboard: React.FC = () => {
   const [userDeposit, setUserDeposit] = useState(0);
   const [userLoan, setUserLoan] = useState<any>(null);
   const [userHealthFactor, setUserHealthFactor] = useState<number | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
 
   // Fetch protocol stats
   useEffect(() => {
@@ -85,13 +88,22 @@ export const Dashboard: React.FC = () => {
 
   // Manual refresh function for user portfolio
   const refreshUserData = async () => {
-    if (address) {
-      console.log('Manually refreshing user data for address:', address);
-      
+    if (!address) {
+      setRefreshError('Please connect your wallet first');
+      return;
+    }
+
+    setIsRefreshing(true);
+    setRefreshError(null);
+    console.log('Manually refreshing user data for address:', address);
+    
+    try {
       const deposit = await vault.getUserDeposit();
       if (deposit) {
         console.log('User deposit:', deposit);
         setUserDeposit(deposit.amountSTX);
+      } else {
+        setUserDeposit(0);
       }
 
       const loan = await vault.getUserLoan();
@@ -109,6 +121,13 @@ export const Dashboard: React.FC = () => {
         console.log('No active loan found');
         setUserHealthFactor(null);
       }
+      
+      console.log('Refresh completed successfully');
+    } catch (error: any) {
+      console.error('Error refreshing data:', error);
+      setRefreshError(error.message || 'Failed to refresh data');
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -181,14 +200,31 @@ export const Dashboard: React.FC = () => {
               <h2 className="text-lg font-semibold text-gray-900">Your Portfolio</h2>
               <button
                 onClick={refreshUserData}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                disabled={isRefreshing}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg 
+                  className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                Refresh Data
+                {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
               </button>
             </div>
+            
+            {/* Error Message */}
+            {refreshError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-sm text-red-700">{refreshError}</span>
+              </div>
+            )}
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <div className="text-sm text-gray-500 mb-2">Total Deposited</div>
@@ -261,6 +297,14 @@ export const Dashboard: React.FC = () => {
                 <HealthMonitor />
               </div>
             </div>
+          </section>
+        )}
+
+        {/* Transaction History */}
+        {address && (
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Transaction History</h2>
+            <TransactionHistory />
           </section>
         )}
 

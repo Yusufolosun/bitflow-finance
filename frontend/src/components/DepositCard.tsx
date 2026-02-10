@@ -19,23 +19,20 @@ export const DepositCard: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [lastTxId, setLastTxId] = useState<string | null>(null);
 
-  // Fetch user's current deposit only after transactions
-  // Initial fetch removed to prevent API rate limiting
-  // useEffect(() => {
-  //   const fetchDeposit = async () => {
-  //     if (address) {
-  //       const deposit = await vault.getUserDeposit();
-  //       if (deposit) {
-  //         setUserDeposit(deposit.amountSTX);
-  //       }
-  //     }
-  //   };
-  //
-  //   fetchDeposit();
-  //   // Auto-refresh disabled to prevent rate limiting
-  //   // const interval = setInterval(fetchDeposit, 30000);
-  //   // return () => clearInterval(interval);
-  // }, [address, vault]);
+  // Fetch user's current deposit once on mount
+  useEffect(() => {
+    const fetchDeposit = async () => {
+      if (address) {
+        const deposit = await vault.getUserDeposit();
+        if (deposit) {
+          setUserDeposit(deposit.amountSTX);
+        }
+      }
+    };
+
+    fetchDeposit();
+    // Auto-refresh disabled to prevent rate limiting
+  }, [address]); // Only re-fetch when address changes
 
   const handleDeposit = async () => {
     const amount = parseFloat(depositAmount);
@@ -178,6 +175,9 @@ export const DepositCard: React.FC = () => {
               Deposit successful! Balance updated.
             </span>
           </div>
+          <p className="text-xs text-green-600">
+            Tip: Click "Refresh Data" on Dashboard to update your total deposit view.
+          </p>
           {lastTxId && (
             <a
               href={getExplorerUrl(lastTxId)}

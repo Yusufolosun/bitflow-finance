@@ -21,8 +21,16 @@ export const WalletConnect: React.FC = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await refreshBalance();
-    setTimeout(() => setIsRefreshing(false), 1000);
+    try {
+      console.log('Manual balance refresh initiated');
+      await refreshBalance();
+      // Wait a bit longer to ensure balance updates
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    } catch (error) {
+      console.error('Error during manual refresh:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   // Format address for display
