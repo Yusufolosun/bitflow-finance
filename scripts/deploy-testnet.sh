@@ -13,17 +13,14 @@ fi
 echo "📋 Running contract checks..."
 clarinet check
 
-# Run tests
+# Run tests (using npm since clarinet test is deprecated)
 echo "🧪 Running tests..."
-clarinet test
+npm test
 
-# Generate deployment plan
-echo "📝 Generating deployment plan..."
-clarinet deployments generate --testnet
-
-# Deploy
+# Deploy to testnet
 echo "🚀 Deploying to testnet..."
-clarinet deployments apply --testnet
+echo "⚠️  Make sure you have STX in your testnet wallet for deployment fees"
+clarinet deployments apply -p deployments/default.testnet-plan.yaml
 
 echo "✅ Deployment complete!"
 echo ""

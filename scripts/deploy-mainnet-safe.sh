@@ -15,9 +15,6 @@ echo "   - Verify contract address after deployment"
 echo "   - Monitor the deployment transaction"
 echo ""
 
-# Use optimized contract for deployment
-cp contracts/vault-core-optimized.clar contracts/vault-core-deploy.clar
-
 # Generate deployment plan
 echo "📝 Generating deployment plan..."
 clarinet deployments generate --mainnet --low-cost

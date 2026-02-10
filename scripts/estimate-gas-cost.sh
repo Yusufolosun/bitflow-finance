@@ -5,7 +5,7 @@ echo "======================================"
 echo ""
 
 # Get contract size
-CONTRACT_SIZE=$(wc -c < contracts/vault-core-optimized.clar)
+CONTRACT_SIZE=$(wc -c < contracts/bitflow-vault-core.clar)
 echo "Contract size: ${CONTRACT_SIZE} bytes"
 
 # Estimate gas (rough formula: ~0.000005 STX per byte)

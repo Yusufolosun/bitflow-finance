@@ -15,7 +15,7 @@ npm test || { echo "❌ Tests failing"; exit 1; }
 
 # 3. Check contract size
 echo "✓ Checking contract size..."
-CONTRACT_SIZE=$(wc -c < contracts/vault-core-optimized.clar)
+CONTRACT_SIZE=$(wc -c < contracts/bitflow-vault-core.clar)
 echo "   Contract size: $CONTRACT_SIZE bytes"
 if [ $CONTRACT_SIZE -gt 30000 ]; then
     echo "⚠️  Warning: Contract is large (${CONTRACT_SIZE} bytes)"
