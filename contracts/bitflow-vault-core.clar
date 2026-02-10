@@ -223,12 +223,16 @@
     (user-balance (default-to u0 (map-get? user-deposits tx-sender)))
     (required-collateral (calculate-required-collateral amount))
     (term-end (+ block-height (* term-days u144))) ;; ~144 blocks per day
+    (recipient tx-sender)
   )
     ;; Verify user doesn't already have an active loan (one loan per user)
     (asserts! (is-none (map-get? user-loans tx-sender)) ERR-ALREADY-HAS-LOAN)
     
     ;; Verify user has enough deposited collateral (150% ratio)
     (asserts! (>= user-balance required-collateral) ERR-INSUFFICIENT-COLLATERAL)
+    
+    ;; Transfer borrowed STX from contract to user
+    (try! (as-contract (stx-transfer? amount tx-sender recipient)))
     
     ;; Store loan details
     (map-set user-loans tx-sender {
