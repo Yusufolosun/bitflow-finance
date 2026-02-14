@@ -1,150 +1,203 @@
-import React, { useState, useEffect } from 'react';
-import { Clock, ArrowDownCircle, ArrowUpCircle, TrendingUp, DollarSign, CheckCircle, XCircle, Loader } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Clock, ArrowDownCircle, ArrowUpCircle, TrendingUp, DollarSign, CheckCircle, XCircle, Loader, ExternalLink, RefreshCw } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { formatSTX, formatTimestamp } from '../utils/formatters';
+import { getApiEndpoint, getExplorerUrl, VAULT_CONTRACT, ACTIVE_NETWORK } from '../config/contracts';
 
 /**
- * Transaction types
+ * Transaction types mapped from contract function names
  */
-type TransactionType = 'deposit' | 'withdraw' | 'borrow' | 'repay';
+type TransactionType = 'deposit' | 'withdraw' | 'borrow' | 'repay' | 'liquidate' | 'unknown';
 
 /**
- * Transaction status
+ * Transaction status from API
  */
 type TransactionStatus = 'pending' | 'confirmed' | 'failed';
 
 /**
- * Transaction interface
+ * Blockchain transaction interface
  */
-interface Transaction {
+interface ChainTransaction {
   id: string;
   type: TransactionType;
   amount: number;
   timestamp: number;
   status: TransactionStatus;
-  txHash?: string;
+  txId: string;
   blockHeight?: number;
+  functionName: string;
 }
 
 /**
+ * Map contract function name to transaction type
+ */
+const mapFunctionToType = (functionName: string): TransactionType => {
+  switch (functionName) {
+    case 'deposit': return 'deposit';
+    case 'withdraw': return 'withdraw';
+    case 'borrow': return 'borrow';
+    case 'repay': return 'repay';
+    case 'liquidate': return 'liquidate';
+    default: return 'unknown';
+  }
+};
+
+/**
+ * Extract STX amount from transaction args or result
+ */
+const extractAmount = (tx: any): number => {
+  try {
+    const args = tx.contract_call?.function_args;
+    if (args && args.length > 0) {
+      const amountArg = args[0];
+      if (amountArg && amountArg.repr) {
+        const val = amountArg.repr.replace('u', '');
+        return Number(val) / 1_000_000;
+      }
+    }
+
+    // For repay, try reading from tx_result
+    if (tx.tx_result && tx.tx_result.repr) {
+      const repr = tx.tx_result.repr;
+      const totalMatch = repr.match(/total:\s*u(\d+)/);
+      if (totalMatch) {
+        return Number(totalMatch[1]) / 1_000_000;
+      }
+    }
+
+    return 0;
+  } catch {
+    return 0;
+  }
+};
+
+/**
  * TransactionHistory Component
- * Displays user's transaction history
+ * Fetches and displays real transaction history from the Hiro API,
+ * filtered to only show vault contract interactions.
  */
 export const TransactionHistory: React.FC = () => {
   const { address } = useAuth();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<ChainTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<TransactionType | 'all'>('all');
 
-  // Fetch transaction history
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      if (!address) {
-        setTransactions([]);
-        return;
+  const contractId = ACTIVE_NETWORK === 'testnet'
+    ? `${VAULT_CONTRACT.testnet.address}.${VAULT_CONTRACT.testnet.contractName}`
+    : `${VAULT_CONTRACT.mainnet.address}.${VAULT_CONTRACT.mainnet.contractName}`;
+
+  /**
+   * Fetch transactions from Hiro API
+   */
+  const fetchTransactions = useCallback(async () => {
+    if (!address) {
+      setTransactions([]);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const apiUrl = getApiEndpoint();
+
+      const response = await fetch(
+        `${apiUrl}/extended/v1/address/${address}/transactions?limit=50`,
+        { headers: { 'Accept': 'application/json' } }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
       }
 
-      setIsLoading(true);
+      const data = await response.json();
+      const results = data.results || [];
 
-      // In a real implementation, this would fetch from the blockchain
-      // Using mock data for demonstration
-      const mockTransactions: Transaction[] = [
-        {
-          id: '1',
-          type: 'deposit',
-          amount: 1000,
-          timestamp: Date.now() - 3600000,
-          status: 'confirmed',
-          txHash: '0x1234...5678',
-          blockHeight: 12345,
-        },
-        {
-          id: '2',
-          type: 'borrow',
-          amount: 500,
-          timestamp: Date.now() - 7200000,
-          status: 'confirmed',
-          txHash: '0x2345...6789',
-          blockHeight: 12340,
-        },
-        {
-          id: '3',
-          type: 'deposit',
-          amount: 2000,
-          timestamp: Date.now() - 86400000,
-          status: 'confirmed',
-          txHash: '0x3456...7890',
-          blockHeight: 12300,
-        },
-        {
-          id: '4',
-          type: 'repay',
-          amount: 505,
-          timestamp: Date.now() - 172800000,
-          status: 'confirmed',
-          txHash: '0x4567...8901',
-          blockHeight: 12250,
-        },
-        {
-          id: '5',
-          type: 'withdraw',
-          amount: 300,
-          timestamp: Date.now() - 259200000,
-          status: 'confirmed',
-          txHash: '0x5678...9012',
-          blockHeight: 12200,
-        },
-      ];
+      // Filter for vault contract interactions only
+      const vaultTxs: ChainTransaction[] = results
+        .filter((tx: any) => {
+          if (tx.tx_type !== 'contract_call') return false;
+          return tx.contract_call?.contract_id === contractId;
+        })
+        .map((tx: any) => {
+          const functionName = tx.contract_call?.function_name || 'unknown';
+          const type = mapFunctionToType(functionName);
+          const amount = extractAmount(tx);
 
-      setTransactions(mockTransactions);
+          let status: TransactionStatus = 'pending';
+          if (tx.tx_status === 'success') status = 'confirmed';
+          else if (tx.tx_status === 'abort_by_response' || tx.tx_status === 'abort_by_post_condition') status = 'failed';
+
+          return {
+            id: tx.tx_id,
+            type,
+            amount,
+            timestamp: tx.burn_block_time ? tx.burn_block_time * 1000 : Date.now(),
+            status,
+            txId: tx.tx_id,
+            blockHeight: tx.block_height,
+            functionName,
+          };
+        });
+
+      setTransactions(vaultTxs);
+    } catch (err: any) {
+      console.error('Error fetching transactions:', err);
+      setError(err.message || 'Failed to fetch transactions');
+    } finally {
       setIsLoading(false);
-    };
+    }
+  }, [address, contractId]);
 
+  useEffect(() => {
     fetchTransactions();
-  }, [address]);
+  }, [fetchTransactions]);
 
-  // Filter transactions
-  const filteredTransactions = filter === 'all' 
-    ? transactions 
+  // Filter
+  const filteredTransactions = filter === 'all'
+    ? transactions
     : transactions.filter(tx => tx.type === filter);
 
-  // Get transaction icon
+  // Icon helpers
   const getTransactionIcon = (type: TransactionType) => {
     switch (type) {
-      case 'deposit':
-        return <ArrowDownCircle size={20} className="text-green-600" />;
-      case 'withdraw':
-        return <ArrowUpCircle size={20} className="text-blue-600" />;
-      case 'borrow':
-        return <TrendingUp size={20} className="text-purple-600" />;
-      case 'repay':
-        return <DollarSign size={20} className="text-orange-600" />;
+      case 'deposit': return <ArrowDownCircle size={20} className="text-green-600" />;
+      case 'withdraw': return <ArrowUpCircle size={20} className="text-blue-600" />;
+      case 'borrow': return <TrendingUp size={20} className="text-purple-600" />;
+      case 'repay': return <DollarSign size={20} className="text-orange-600" />;
+      case 'liquidate': return <XCircle size={20} className="text-red-600" />;
+      default: return <Clock size={20} className="text-gray-400" />;
     }
   };
 
-  // Get status icon
   const getStatusIcon = (status: TransactionStatus) => {
     switch (status) {
-      case 'confirmed':
-        return <CheckCircle size={16} className="text-green-600" />;
-      case 'failed':
-        return <XCircle size={16} className="text-red-600" />;
-      case 'pending':
-        return <Loader size={16} className="text-yellow-600 animate-spin" />;
+      case 'confirmed': return <CheckCircle size={16} className="text-green-600" />;
+      case 'failed': return <XCircle size={16} className="text-red-600" />;
+      case 'pending': return <Loader size={16} className="text-yellow-600 animate-spin" />;
     }
   };
 
-  // Get transaction color
+  const getBadgeColor = (type: TransactionType) => {
+    switch (type) {
+      case 'deposit': return 'bg-green-100 text-green-800 border-green-200';
+      case 'withdraw': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'borrow': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'repay': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'liquidate': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
   const getTransactionColor = (type: TransactionType) => {
     switch (type) {
-      case 'deposit':
-        return 'bg-green-50 border-green-200';
-      case 'withdraw':
-        return 'bg-blue-50 border-blue-200';
-      case 'borrow':
-        return 'bg-purple-50 border-purple-200';
-      case 'repay':
-        return 'bg-orange-50 border-orange-200';
+      case 'deposit': return 'bg-green-50 border-green-200';
+      case 'withdraw': return 'bg-blue-50 border-blue-200';
+      case 'borrow': return 'bg-purple-50 border-purple-200';
+      case 'repay': return 'bg-orange-50 border-orange-200';
+      case 'liquidate': return 'bg-red-50 border-red-200';
+      default: return 'bg-gray-50 border-gray-200';
     }
   };
 
@@ -159,55 +212,77 @@ export const TransactionHistory: React.FC = () => {
           <div>
             <h3 className="text-xl font-bold text-gray-900">Transaction History</h3>
             <p className="text-sm text-gray-500">
-              {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''}
+              {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''} from blockchain
             </p>
           </div>
         </div>
 
-        {/* Filter Buttons */}
-        <div className="flex gap-2">
-          {(['all', 'deposit', 'withdraw', 'borrow', 'repay'] as const).map((type) => (
-            <button
-              key={type}
-              onClick={() => setFilter(type)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${
-                filter === type
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {type}
-            </button>
-          ))}
-        </div>
+        <button
+          onClick={fetchTransactions}
+          disabled={isLoading}
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+          title="Refresh transactions"
+        >
+          <RefreshCw size={16} className={`text-gray-600 ${isLoading ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
+      {/* Filter Buttons */}
+      <div className="flex gap-2 mb-6 flex-wrap">
+        {(['all', 'deposit', 'withdraw', 'borrow', 'repay'] as const).map((type) => (
+          <button
+            key={type}
+            onClick={() => setFilter(type)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${
+              filter === type
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {type}
+          </button>
+        ))}
       </div>
 
       {/* Loading State */}
-      {isLoading && (
+      {isLoading && transactions.length === 0 && (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading transactions...</p>
+          <p className="text-gray-500">Loading transactions from blockchain...</p>
         </div>
       )}
 
-      {/* Empty State */}
+      {/* Error State */}
+      {error && (
+        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
+          <XCircle size={16} className="text-red-500 flex-shrink-0" />
+          <span className="text-sm text-red-700 flex-1">{error}</span>
+          <button
+            onClick={fetchTransactions}
+            className="text-xs font-medium text-red-600 hover:text-red-800"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Empty State - No Wallet */}
       {!isLoading && !address && (
         <div className="text-center py-12">
           <Clock className="mx-auto text-gray-400 mb-4" size={48} />
           <p className="text-gray-600 mb-1 font-medium">No Wallet Connected</p>
-          <p className="text-sm text-gray-500">
-            Connect your wallet to view transaction history
-          </p>
+          <p className="text-sm text-gray-500">Connect your wallet to view transaction history</p>
         </div>
       )}
 
-      {!isLoading && address && filteredTransactions.length === 0 && (
+      {/* Empty State - No Transactions */}
+      {!isLoading && address && filteredTransactions.length === 0 && !error && (
         <div className="text-center py-12">
           <Clock className="mx-auto text-gray-400 mb-4" size={48} />
           <p className="text-gray-600 mb-1 font-medium">No Transactions</p>
           <p className="text-sm text-gray-500">
-            {filter === 'all' 
-              ? 'Your transaction history will appear here'
+            {filter === 'all'
+              ? 'No vault interactions found for your address'
               : `No ${filter} transactions found`}
           </p>
         </div>
@@ -227,46 +302,51 @@ export const TransactionHistory: React.FC = () => {
                   <div className="flex-shrink-0">
                     {getTransactionIcon(tx.type)}
                   </div>
-                  
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-gray-900 capitalize">
-                        {tx.type}
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      {/* Colored Function Badge */}
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border capitalize ${getBadgeColor(tx.type)}`}>
+                        {tx.functionName}
                       </span>
                       {getStatusIcon(tx.status)}
                     </div>
-                    
-                    <div className="flex items-center gap-3 text-xs text-gray-600">
+
+                    <div className="flex items-center gap-3 text-xs text-gray-600 flex-wrap">
                       <span>{formatTimestamp(tx.timestamp)}</span>
                       {tx.blockHeight && (
                         <>
-                          <span>•</span>
-                          <span>Block {tx.blockHeight.toLocaleString()}</span>
+                          <span>·</span>
+                          <span>Block #{tx.blockHeight.toLocaleString()}</span>
                         </>
                       )}
-                      {tx.txHash && (
-                        <>
-                          <span>•</span>
-                          <span className="font-mono">{tx.txHash}</span>
-                        </>
-                      )}
+                      <a
+                        href={getExplorerUrl(tx.txId)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        <span className="font-mono">{tx.txId.slice(0, 10)}...{tx.txId.slice(-6)}</span>
+                        <ExternalLink size={10} />
+                      </a>
                     </div>
                   </div>
                 </div>
 
                 {/* Right: Amount */}
-                <div className="text-right">
-                  <div className={`text-lg font-bold ${
-                    tx.type === 'deposit' || tx.type === 'borrow' 
-                      ? 'text-green-600' 
-                      : 'text-red-600'
-                  }`}>
-                    {tx.type === 'deposit' || tx.type === 'borrow' ? '+' : '-'}
-                    {formatSTX(tx.amount)} STX
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    ≈ ${(tx.amount * 1.5).toFixed(2)} USD
-                  </div>
+                <div className="text-right flex-shrink-0 ml-4">
+                  {tx.amount > 0 ? (
+                    <div className={`text-lg font-bold ${
+                      tx.type === 'deposit' || tx.type === 'borrow'
+                        ? 'text-green-600'
+                        : 'text-red-600'
+                    }`}>
+                      {tx.type === 'deposit' || tx.type === 'borrow' ? '+' : '-'}
+                      {formatSTX(tx.amount)} STX
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-400">—</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -277,7 +357,7 @@ export const TransactionHistory: React.FC = () => {
       {/* Summary */}
       {!isLoading && filteredTransactions.length > 0 && (
         <div className="mt-6 pt-6 border-t border-gray-200">
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-xs text-gray-500 mb-1">Total Deposits</div>
               <div className="text-sm font-bold text-green-600">
