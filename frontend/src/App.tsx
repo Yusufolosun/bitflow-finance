@@ -1,4 +1,5 @@
 import { Dashboard } from './components/Dashboard';
+import { ToastProvider } from './components/ToastProvider';
 import './index.css';
 
 /**
@@ -7,9 +8,11 @@ import './index.css';
  */
 function App() {
   return (
-    <div className="App">
-      <Dashboard />
-    </div>
+    <ToastProvider>
+      <div className="App">
+        <Dashboard />
+      </div>
+    </ToastProvider>
   );
 }
 

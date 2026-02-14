@@ -153,6 +153,22 @@
     }
   }
 
+  /* Toast slide-up animation */
+  .animate-toast-slide-up {
+    animation: toastSlideUp 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+  }
+
+  @keyframes toastSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(16px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
   /* Scrollbar Styles */
   .scrollbar-thin::-webkit-scrollbar {
     width: 8px;
