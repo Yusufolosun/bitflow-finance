@@ -530,15 +530,102 @@ microSTX = STX × 1,000,000
 
 ---
 
+## Additional Terms
+
+### Basis Points (BPS)
+
+A unit of measurement equal to 1/100th of 1%. Used for interest rates.
+
+| BPS | Percentage |
+|-----|-----------|
+| 1 | 0.01% |
+| 100 | 1% |
+| 500 | 5% |
+| 10000 | 100% |
+
+### Block Height
+
+The sequential number of a block on the blockchain. Used to track time in the BitFlow protocol. One block ≈ 10 minutes.
+
+### Block Time
+
+The average time between blocks on the Stacks blockchain. Approximately 10 minutes. Used to derive:
+- Blocks per day: 144
+- Blocks per year: 52,560
+
+### Clarity
+
+The smart contract language used on the Stacks blockchain. Clarity is decidable (not Turing-complete), which means you can know in advance exactly what a contract will do.
+
+### Data Map
+
+A key-value store in Clarity. BitFlow uses two maps:
+- `user-deposits`: maps addresses to deposit amounts
+- `user-loans`: maps addresses to loan details
+
+### Data Variable
+
+A single mutable value stored in the contract. BitFlow tracks: `total-deposits`, `total-repaid`, `total-liquidations`, `last-activity-block`, `initialized`, `contract-owner`.
+
+### Gas Fee
+
+The cost of executing a transaction on the blockchain. Paid in STX. Read-only function calls are free.
+
+### Health Factor
+
+The ratio of collateral value to debt (principal + interest), expressed as a percentage. Below 110% triggers liquidation eligibility.
+
+### Immutable
+
+Cannot be changed after deployment. All Clarity contracts are immutable — the code cannot be modified once deployed to the blockchain.
+
+### Liquidator Bonus
+
+The 5% incentive paid to liquidators from the borrower's seized collateral. Encourages timely liquidation of unhealthy positions.
+
+### Mempool
+
+The waiting area for transactions before they are included in a block. Transactions in the mempool are pending confirmation.
+
+### microSTX
+
+The smallest unit of STX. 1 STX = 1,000,000 microSTX. All contract operations use microSTX internally.
+
+### Nonce
+
+A sequential counter for each account's transactions. Ensures transactions are processed in order and prevents replay attacks.
+
+### Post-Condition
+
+A Stacks safety feature that verifies transaction outcomes match expectations. Prevents contracts from spending more tokens than authorized.
+
+### Principal
+
+A Stacks address (user or contract). The key type used for data map lookups in BitFlow.
+
+### Read-Only Function
+
+A contract function that reads data without modifying state. Free to call (no gas fee). Examples: `get-user-deposit`, `calculate-health-factor`.
+
+### Simple Interest
+
+Interest calculated only on the original principal, not on accumulated interest. BitFlow uses simple interest: `principal × rate × time`.
+
+### tx-sender
+
+The Clarity keyword representing the address that initiated the current transaction.
+
+---
+
 ## Need More Definitions?
 
 - **Technical Documentation:** [CONTRACTS.md](./CONTRACTS.md), [API.md](./API.md)
 - **User Guide:** [FAQ.md](./FAQ.md), [EXAMPLES.md](./EXAMPLES.md)
-- **General Questions:** [Discord](https://discord.gg/bitflow)
+- **Reference:** [Constants](./CONSTANTS_REFERENCE.md), [Errors](./ERROR_REFERENCE.md), [Acronyms](./ACRONYMS.md)
 
 ---
 
-**Document Version:** 1.0.0  
-**Last Updated:** January 25, 2026
+**Document Version:** 1.1.0
+**Last Updated:** February 10, 2026
 
 💡 **Tip:** Use Ctrl+F (or Cmd+F on Mac) to quickly find specific terms on this page!
