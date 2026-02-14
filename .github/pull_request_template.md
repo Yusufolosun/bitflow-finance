@@ -4,10 +4,13 @@
 <!-- Provide a clear and concise description of your changes -->
 
 ## Type of Change
-<!-- Mark the relevant option(s) with an "x" -->
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] 🐛 Bug fix (non-breaking change which fixes an issue)
+- [ ] ✨ New feature (non-breaking change which adds functionality)
+- [ ] 💥 Breaking change (fix or feature that causes existing functionality to change)
+- [ ] 📝 Documentation update
+- [ ] ⚡ Performance improvement
+- [ ] 🔧 Code refactoring
+- [ ] 📦 Dependency update
 - [ ] Documentation update
 - [ ] Performance improvement
 - [ ] Code refactoring
@@ -111,17 +114,20 @@ Fixes #(issue number)
 ## Additional Context
 <!-- Add any other context, screenshots, or information about the PR -->
 
-## Review Focus Areas
-<!-- Highlight specific areas where you'd like reviewer attention -->
-1. 
-2. 
-3. 
+## DeFi Risk Assessment
+<!-- For changes affecting financial logic -->
+- [ ] N/A — no financial logic changes
+- [ ] Collateral ratio calculations verified
+- [ ] Interest rate computations tested with edge cases
+- [ ] Liquidation thresholds unaffected (or intentionally changed)
+- [ ] No new attack vectors (reentrancy, front-running, oracle manipulation)
+- [ ] Gas costs measured and acceptable
 
 ---
 
-**For Reviewers:**
+**Reviewer Checklist:**
 - [ ] Code quality and style
-- [ ] Test coverage
-- [ ] Security considerations
-- [ ] Performance impact
-- [ ] Documentation completeness
+- [ ] Test coverage adequate
+- [ ] Security considerations reviewed
+- [ ] Performance impact acceptable
+- [ ] Documentation updated
