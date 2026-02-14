@@ -1229,8 +1229,197 @@ async function autoRepayIfNearLiquidation() {
 
 ---
 
-**Document Version:** 1.0.0  
-**Last Updated:** January 25, 2026
+## Complete User Journeys
+
+Three end-to-end scenarios showing the full lifecycle from deposit through withdrawal.
+
+### Journey 1: The Conservative Saver
+
+**Profile:** New user who wants to test the protocol with a small amount before committing larger funds.
+
+```typescript
+// Step 1: Connect wallet and check balance
+const userData = useAuth();
+console.log(`Balance: ${userData.balance} microSTX`);
+// Balance: 50000000 microSTX (50 STX)
+
+// Step 2: Make a small test deposit (1 STX)
+const testDeposit = await openContractCall({
+  contractAddress: 'SP1M46W6CVGAMH3ZJD3TKMY5KCY48HWAZK0DYG193',
+  contractName: 'bitflow-vault-core',
+  functionName: 'deposit',
+  functionArgs: [uintCV(1_000_000)], // 1 STX
+  postConditions: [
+    makeStandardSTXPostCondition(userAddress, FungibleConditionCode.Equal, 1_000_000)
+  ],
+});
+// Result: (ok true) — 1 STX deposited
+
+// Step 3: Verify deposit on-chain
+const deposit = await callReadOnlyFunction({
+  functionName: 'get-user-deposit',
+  functionArgs: [principalCV(userAddress)],
+  // ...
+});
+// Returns: u1000000 (1 STX confirmed)
+
+// Step 4: User decides protocol works, deposits more (19 STX)
+await openContractCall({
+  functionName: 'deposit',
+  functionArgs: [uintCV(19_000_000)],
+  // ...
+});
+// Total deposit: 20 STX
+
+// Step 5: No borrowing — user just wants to save
+// Collateral sits safely, withdrawable at any time
+
+// Step 6: After 3 months, user withdraws everything
+await openContractCall({
+  functionName: 'withdraw',
+  functionArgs: [uintCV(20_000_000)],
+  // ...
+});
+// 20 STX returned to wallet
+// Net cost: only gas fees (~0.003 STX total for 3 transactions)
+```
+
+**Outcome:** User deposited, stored safely, and withdrew — zero interest paid, zero risk of liquidation.
+
+### Journey 2: The Strategic Borrower
+
+**Profile:** Experienced user who borrows conservatively and repays before the due date.
+
+```typescript
+// Step 1: Deposit 30 STX as collateral
+await openContractCall({
+  functionName: 'deposit',
+  functionArgs: [uintCV(30_000_000)],
+});
+
+// Step 2: Calculate safe borrow amount
+// Max: 30 / 1.5 = 20 STX (health = 150%)
+// Target: 30 / 2.0 = 15 STX (health = 200% — much safer)
+const maxBorrow = await callReadOnlyFunction({
+  functionName: 'get-max-borrow-amount',
+  functionArgs: [principalCV(userAddress)],
+});
+// Returns: u20000000 (20 STX maximum)
+
+// Step 3: Borrow 15 STX at 5% APR for 30 days
+await openContractCall({
+  functionName: 'borrow',
+  functionArgs: [
+    uintCV(15_000_000),  // 15 STX
+    uintCV(500),          // 5% APR
+    uintCV(30),           // 30 days
+  ],
+});
+// Health factor: 200%
+
+// Step 4: Monitor health factor (every few days)
+const health = await callReadOnlyFunction({
+  functionName: 'calculate-health-factor',
+  functionArgs: [principalCV(userAddress), uintCV(100)],
+});
+// Day 10: 199.7%
+// Day 20: 199.5%
+// Still very safe
+
+// Step 5: Repay on day 20 (10 days early)
+const repayment = await callReadOnlyFunction({
+  functionName: 'get-repayment-amount',
+  functionArgs: [principalCV(userAddress)],
+});
+// Returns: { principal: 15.0, interest: 0.027, total: 15.027 }
+
+await openContractCall({
+  functionName: 'repay',
+  functionArgs: [],
+});
+// Paid 15.027 STX — saved ~0.014 STX by repaying early
+
+// Step 6: Withdraw collateral
+await openContractCall({
+  functionName: 'withdraw',
+  functionArgs: [uintCV(30_000_000)],
+});
+// 30 STX back in wallet
+// Total cost: 0.027 STX interest + ~0.008 STX gas = 0.035 STX
+```
+
+**Outcome:** Borrowed 15 STX for 20 days, paid only 0.027 STX in interest. Health factor never dropped below 199%.
+
+### Journey 3: The Close Call
+
+**Profile:** User who borrows near the maximum and has to take corrective action.
+
+```typescript
+// Step 1: Deposit 10 STX
+await openContractCall({
+  functionName: 'deposit',
+  functionArgs: [uintCV(10_000_000)],
+});
+
+// Step 2: Borrow 6 STX (60% ratio — aggressive)
+await openContractCall({
+  functionName: 'borrow',
+  functionArgs: [
+    uintCV(6_000_000),   // 6 STX
+    uintCV(1000),         // 10% APR (high rate)
+    uintCV(90),           // 90 days
+  ],
+});
+// Starting health factor: 166.7%
+
+// Step 3: Forget to monitor for 60 days...
+// Day 60 health check:
+const health60 = await callReadOnlyFunction({
+  functionName: 'calculate-health-factor',
+  functionArgs: [principalCV(userAddress), uintCV(100)],
+});
+// Health: 161.3% — interest has been accruing
+
+// Step 4: User realizes they forgot, checks repayment amount
+const repay = await callReadOnlyFunction({
+  functionName: 'get-repayment-amount',
+  functionArgs: [principalCV(userAddress)],
+});
+// { principal: 6.0, interest: 0.099, total: 6.099 }
+
+// Step 5: Add collateral to be safe (deposit 5 more STX)
+await openContractCall({
+  functionName: 'deposit',
+  functionArgs: [uintCV(5_000_000)],
+});
+// Health factor jumps: 15 STX / 6.099 STX = 245.9% — safe!
+
+// Step 6: Repay at day 85 (5 days before due)
+const repay85 = await callReadOnlyFunction({
+  functionName: 'get-repayment-amount',
+  functionArgs: [principalCV(userAddress)],
+});
+// { principal: 6.0, interest: 0.140, total: 6.140 }
+
+await openContractCall({
+  functionName: 'repay',
+  functionArgs: [],
+});
+
+// Step 7: Withdraw all
+await openContractCall({
+  functionName: 'withdraw',
+  functionArgs: [uintCV(15_000_000)],
+});
+// Cost: 0.140 STX interest + ~0.012 STX gas
+```
+
+**Outcome:** Started risky, forgot to monitor, but recovered by adding collateral. Lesson: always monitor active loans.
+
+---
+
+**Document Version:** 1.1.0  
+**Last Updated:** February 14, 2026
 
 For more examples and support:
 - **Documentation:** See [INTEGRATION.md](./INTEGRATION.md)
