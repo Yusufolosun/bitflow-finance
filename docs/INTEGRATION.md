@@ -1257,6 +1257,228 @@ describe('BitFlow Integration Tests', () => {
 
 ---
 
+## React Integration
+
+Complete guide to integrating BitFlow Finance into a React application.
+
+### Prerequisites
+
+```bash
+npm install @stacks/connect @stacks/transactions @stacks/network react react-dom
+```
+
+### Wallet Connection Hook
+
+```typescript
+// hooks/useBitFlowAuth.ts
+import { useState, useCallback, useEffect } from 'react';
+import { showConnect, UserSession, AppConfig } from '@stacks/connect';
+
+const appConfig = new AppConfig(['store_write']);
+const userSession = new UserSession({ appConfig });
+
+export function useBitFlowAuth() {
+  const [isConnected, setIsConnected] = useState(false);
+  const [address, setAddress] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (userSession.isUserSignedIn()) {
+      const userData = userSession.loadUserData();
+      setIsConnected(true);
+      setAddress(userData.profile.stxAddress.mainnet);
+    }
+  }, []);
+
+  const connect = useCallback(() => {
+    showConnect({
+      appDetails: { name: 'BitFlow Finance', icon: '/logo.png' },
+      onFinish: () => {
+        const userData = userSession.loadUserData();
+        setIsConnected(true);
+        setAddress(userData.profile.stxAddress.mainnet);
+      },
+      userSession,
+    });
+  }, []);
+
+  const disconnect = useCallback(() => {
+    userSession.signUserOut();
+    setIsConnected(false);
+    setAddress(null);
+  }, []);
+
+  return { isConnected, address, connect, disconnect, userSession };
+}
+```
+
+### Contract Interaction Hook
+
+```typescript
+// hooks/useBitFlowVault.ts
+import { useCallback, useState } from 'react';
+import { openContractCall } from '@stacks/connect';
+import {
+  callReadOnlyFunction,
+  uintCV,
+  principalCV,
+  cvToValue,
+  FungibleConditionCode,
+  makeStandardSTXPostCondition,
+} from '@stacks/transactions';
+
+const CONTRACT_ADDRESS = 'SP1M46W6CVGAMH3ZJD3TKMY5KCY48HWAZK0DYG193';
+const CONTRACT_NAME = 'bitflow-vault-core';
+const MICRO_STX = 1_000_000;
+
+export function useBitFlowVault(userAddress: string) {
+  const [loading, setLoading] = useState(false);
+
+  // Read-only: get user deposit
+  const getDeposit = useCallback(async () => {
+    const result = await callReadOnlyFunction({
+      contractAddress: CONTRACT_ADDRESS,
+      contractName: CONTRACT_NAME,
+      functionName: 'get-user-deposit',
+      functionArgs: [principalCV(userAddress)],
+      senderAddress: userAddress,
+      network: 'mainnet',
+    });
+    return Number(cvToValue(result)) / MICRO_STX;
+  }, [userAddress]);
+
+  // Write: deposit STX
+  const deposit = useCallback(async (amountSTX: number) => {
+    setLoading(true);
+    const amountMicro = Math.floor(amountSTX * MICRO_STX);
+    try {
+      await openContractCall({
+        contractAddress: CONTRACT_ADDRESS,
+        contractName: CONTRACT_NAME,
+        functionName: 'deposit',
+        functionArgs: [uintCV(amountMicro)],
+        postConditions: [
+          makeStandardSTXPostCondition(
+            userAddress,
+            FungibleConditionCode.Equal,
+            amountMicro
+          ),
+        ],
+        network: 'mainnet',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [userAddress]);
+
+  // Write: borrow STX
+  const borrow = useCallback(async (
+    amountSTX: number,
+    rateBPS: number,
+    termDays: number
+  ) => {
+    setLoading(true);
+    try {
+      await openContractCall({
+        contractAddress: CONTRACT_ADDRESS,
+        contractName: CONTRACT_NAME,
+        functionName: 'borrow',
+        functionArgs: [
+          uintCV(Math.floor(amountSTX * MICRO_STX)),
+          uintCV(rateBPS),
+          uintCV(termDays),
+        ],
+        network: 'mainnet',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [userAddress]);
+
+  // Write: repay loan
+  const repay = useCallback(async () => {
+    setLoading(true);
+    try {
+      await openContractCall({
+        contractAddress: CONTRACT_ADDRESS,
+        contractName: CONTRACT_NAME,
+        functionName: 'repay',
+        functionArgs: [],
+        network: 'mainnet',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [userAddress]);
+
+  return { getDeposit, deposit, borrow, repay, loading };
+}
+```
+
+### Complete React Component
+
+```tsx
+// components/BitFlowDashboard.tsx
+import React, { useEffect, useState } from 'react';
+import { useBitFlowAuth } from '../hooks/useBitFlowAuth';
+import { useBitFlowVault } from '../hooks/useBitFlowVault';
+
+export const BitFlowDashboard: React.FC = () => {
+  const { isConnected, address, connect, disconnect } = useBitFlowAuth();
+  const vault = useBitFlowVault(address || '');
+  const [depositAmount, setDepositAmount] = useState('');
+  const [userDeposit, setUserDeposit] = useState(0);
+
+  useEffect(() => {
+    if (address) {
+      vault.getDeposit().then(setUserDeposit);
+    }
+  }, [address]);
+
+  if (!isConnected) {
+    return (
+      <div className="p-8 text-center">
+        <h1>BitFlow Finance</h1>
+        <p>Connect your wallet to get started</p>
+        <button onClick={connect}>Connect Wallet</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1>BitFlow Finance</h1>
+        <div>
+          <span>{address?.slice(0, 8)}...{address?.slice(-4)}</span>
+          <button onClick={disconnect} className="ml-4">Disconnect</button>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <p>Your Deposit: {userDeposit.toFixed(6)} STX</p>
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          type="number"
+          value={depositAmount}
+          onChange={(e) => setDepositAmount(e.target.value)}
+          placeholder="Amount in STX"
+        />
+        <button
+          onClick={() => vault.deposit(parseFloat(depositAmount))}
+          disabled={vault.loading}
+        >
+          {vault.loading ? 'Processing...' : 'Deposit'}
+        </button>
+      </div>
+    </div>
+  );
+};
+```
+
+---
+
 ## Support
 
 For integration support:
@@ -1266,5 +1488,5 @@ For integration support:
 
 ---
 
-**Last Updated:** January 25, 2026  
+**Last Updated:** February 14, 2026  
 **SDK Version:** @stacks/transactions@6.13.0
