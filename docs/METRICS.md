@@ -103,9 +103,82 @@ This document tracks technical and operational metrics for the BitFlow Finance p
 | Category | Files | Status |
 |----------|-------|--------|
 | **Core Docs** | 4 | ✅ Complete |
-| **User Guides** | 3 | ✅ Complete |
-| **Developer Docs** | 5 | ✅ Complete |
+| **User Guides** | 10 | ✅ Complete |
+| **Developer Docs** | 12 | ✅ Complete |
+| **Reference Docs** | 8 | ✅ Complete |
 | **Meta Docs** | 5 | ✅ Complete |
+
+---
+
+## Protocol Metrics Explained
+
+The contract provides several read-only functions that return protocol-level metrics. Here's what each one means and how to use it.
+
+### get-protocol-stats
+
+Returns cumulative protocol activity:
+
+```clarity
+(contract-call? .bitflow-vault-core get-protocol-stats)
+;; Returns: { total-deposits, total-repaid, total-liquidations }
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `total-deposits` | uint | Cumulative STX deposited (all time) |
+| `total-repaid` | uint | Cumulative STX repaid (principal + interest) |
+| `total-liquidations` | uint | Cumulative STX seized in liquidations |
+
+**Important**: These are cumulative totals, not current balances. `total-deposits` includes STX that was later withdrawn.
+
+### get-protocol-metrics
+
+Returns time-based protocol data:
+
+```clarity
+(contract-call? .bitflow-vault-core get-protocol-metrics)
+;; Returns: { protocol-age, time-since-last-activity }
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `protocol-age` | uint | Blocks since contract deployment |
+| `time-since-last-activity` | uint | Blocks since last deposit/borrow/repay/liquidation |
+
+**Conversion**: Multiply blocks by 10 to get approximate minutes. Divide by 144 for days.
+
+### get-volume-metrics
+
+Returns transaction volume data:
+
+```clarity
+(contract-call? .bitflow-vault-core get-volume-metrics)
+;; Returns: { total-deposits, total-repaid, total-liquidations }
+```
+
+Same data as `get-protocol-stats`. Provided as an alias for clarity in volume-focused contexts.
+
+### Derived Metrics
+
+These can be calculated from the raw data:
+
+| Metric | Calculation | Purpose |
+|--------|------------|---------|
+| **Net Deposits** | `total-deposits - total-withdrawn` | Current protocol TVL (requires off-chain tracking of withdrawals) |
+| **Interest Earned** | `total-repaid - total-principal-repaid` | Revenue generated (requires event log analysis) |
+| **Liquidation Rate** | `total-liquidations / total-deposits` | Risk indicator |
+| **Activity Rate** | `1 / time-since-last-activity` | Protocol usage frequency |
+| **Protocol Age (days)** | `protocol-age / 144` | Time since deployment |
+
+### User-Level Metrics
+
+| Function | Returns | Use Case |
+|----------|---------|----------|
+| `get-user-deposit(user)` | uint | User's current deposit balance |
+| `get-user-loan(user)` | optional tuple | Active loan details |
+| `calculate-health-factor(user)` | uint | Position health (percentage) |
+| `get-max-borrow-amount(user)` | uint | Available borrowing capacity |
+| `get-user-position-summary(user)` | tuple | Combined position overview |
 
 ---
 
