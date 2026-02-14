@@ -13,6 +13,8 @@ import { NetworkIndicator } from './NetworkIndicator';
 import { formatSTX } from '../utils/formatters';
 import { ACTIVE_NETWORK } from '../config/contracts';
 import { useProtocolStats } from '../hooks/useProtocolStats';
+import { LoadingStats } from './LoadingCard';
+import { ErrorState } from './ErrorState';
 
 /**
  * Dashboard Component
@@ -21,7 +23,7 @@ import { useProtocolStats } from '../hooks/useProtocolStats';
 export const Dashboard: React.FC = () => {
   const { address, balance, userSession } = useAuth();
   const vault = useVault(userSession, address);
-  const { stats: protocolStats, isLoading: statsLoading, lastUpdated: statsLastUpdated, refresh: refreshStats } = useProtocolStats(30000);
+  const { stats: protocolStats, isLoading: statsLoading, error: statsError, lastUpdated: statsLastUpdated, refresh: refreshStats } = useProtocolStats(30000);
 
   // Protocol stats derived from hook
   const totalValueLocked = protocolStats?.totalDeposits ?? 0;
@@ -167,6 +169,21 @@ export const Dashboard: React.FC = () => {
               {statsLoading ? 'Loading...' : 'Refresh Stats'}
             </button>
           </div>
+
+          {/* Loading State */}
+          {statsLoading && !protocolStats && <LoadingStats />}
+
+          {/* Error State */}
+          {statsError && !protocolStats && (
+            <ErrorState
+              title="Failed to Load Protocol Stats"
+              message={statsError}
+              onRetry={refreshStats}
+            />
+          )}
+
+          {/* Stats Grid */}
+          {protocolStats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatsCard
               icon={<DollarSign size={24} />}
@@ -193,6 +210,7 @@ export const Dashboard: React.FC = () => {
               color="orange"
             />
           </div>
+          )}
         </section>
 
         {/* User Portfolio */}
