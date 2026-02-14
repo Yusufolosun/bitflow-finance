@@ -605,7 +605,112 @@ Utilization = Total Borrowed ÷ Total Deposits
 
 ---
 
-**Document Version:** 1.0.0  
-**Last Updated:** January 25, 2026
+---
+
+## For Beginners
+
+New to DeFi? Start here. These questions assume no prior knowledge.
+
+### What is DeFi?
+
+**DeFi** stands for **Decentralized Finance**. It's a system of financial applications built on blockchains that operate without banks or intermediaries. Instead of a bank holding your money and deciding who gets loans, smart contracts (code on the blockchain) handle everything automatically and transparently.
+
+BitFlow Finance is a DeFi application — it lets you deposit, borrow, and repay using code instead of a bank.
+
+### What is a blockchain?
+
+A blockchain is a shared digital ledger that records transactions. Think of it like a public spreadsheet that thousands of computers maintain simultaneously. No single person controls it, and once something is recorded, it can't be secretly changed.
+
+BitFlow runs on the **Stacks** blockchain, which is connected to Bitcoin for security.
+
+### What is STX?
+
+**STX** is the native cryptocurrency of the Stacks blockchain, similar to how ETH is the native currency of Ethereum. You need STX to:
+- Pay transaction fees (tiny amounts, ~0.001 STX per transaction)
+- Use as collateral in BitFlow
+- Borrow against your deposits
+
+1 STX = 1,000,000 microSTX (similar to how 1 dollar = 100 cents).
+
+### What is collateral?
+
+Collateral is an asset you pledge to secure a loan. In BitFlow, your deposited STX is your collateral. If you deposit 10 STX, that deposit backs any loan you take.
+
+This is similar to a home mortgage — the house is collateral for the loan. If you don't repay, the lender can take the house. In BitFlow, if your loan becomes undercollateralized, your deposit can be liquidated.
+
+### Why do I need 150% collateral?
+
+The 150% requirement is a safety buffer. If you want to borrow 10 STX, you need at least 15 STX deposited. This protects the protocol:
+
+| You Deposit | You Can Borrow (max) | Safety Buffer |
+|---|---|---|
+| 15 STX | 10 STX | 5 STX buffer |
+| 30 STX | 20 STX | 10 STX buffer |
+
+The buffer exists because crypto prices can be volatile. If the value of STX drops, the buffer prevents the loan from becoming insolvent.
+
+### What is a health factor?
+
+Your **health factor** is a number that shows how safe your loan is. Think of it like a safety score:
+
+- **Above 150%** → You're safe. No action needed.
+- **110% to 150%** → Warning zone. Consider adding more collateral or repaying.
+- **Below 110%** → Danger! Your loan can be liquidated by anyone.
+
+The higher the number, the safer you are. There's no upper limit.
+
+### What happens if I get liquidated?
+
+If your health factor drops below 110%, another user can **liquidate** your loan. Here's what happens:
+
+1. The liquidator pays off your debt (principal + interest)
+2. The liquidator receives your collateral (deposit) as a reward
+3. Your loan is deleted and your deposit is zeroed out
+4. You keep the STX you originally borrowed
+
+**Example:** You deposited 10 STX and borrowed 6 STX. After liquidation, you lose your 10 STX deposit but keep the 6 STX you borrowed. Net loss: 4 STX + interest.
+
+**How to avoid liquidation:** Keep your health factor high by not borrowing the maximum amount.
+
+### What is interest and how is it calculated?
+
+Interest is the cost of borrowing. BitFlow uses **simple interest** (not compound). The formula is:
+
+```
+Interest = Principal × Rate × Time
+```
+
+For example, if you borrow 10 STX at 5% APR for 30 days:
+- Interest ≈ 10 × 0.05 × (30/365) ≈ 0.041 STX
+- Total repayment ≈ 10.041 STX
+
+Interest accrues every block (~10 minutes) but you pay it all at once when you repay.
+
+### Is my money safe?
+
+BitFlow uses several security measures:
+
+- **Smart contract** — Code is open source and auditable
+- **No admin keys** — Nobody can steal funds or change rules after deployment
+- **Overcollateralization** — Loans are always backed by more collateral than borrowed
+- **Immutable** — The contract code cannot be changed once deployed
+- **Bitcoin-secured** — Stacks blockchain settles on Bitcoin
+
+However, like all DeFi, there are risks: smart contract bugs, oracle manipulation, and market volatility. Never deposit more than you can afford to lose.
+
+### How do I get started?
+
+1. Install a Stacks wallet ([Leather](https://leather.io) or [Xverse](https://xverse.app))
+2. Buy STX from an exchange and send it to your wallet
+3. Connect your wallet to BitFlow
+4. Deposit STX
+5. Optionally borrow against your deposit
+
+See the [Quick Start Guide](QUICKSTART.md) for a detailed 5-minute walkthrough.
+
+---
+
+**Document Version:** 1.1.0  
+**Last Updated:** February 14, 2026
 
 💡 **Tip:** If you can't find your question here, check the [GLOSSARY.md](./GLOSSARY.md) for term definitions, or ask in our Discord community!
