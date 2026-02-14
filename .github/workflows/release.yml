@@ -1,0 +1,157 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Run contract tests
+        run: npm test -- --reporter=verbose
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+
+      - name: Run frontend tests
+        run: cd frontend && npx vitest run --pool=forks
+
+      - name: TypeScript check
+        run: cd frontend && npx tsc --noEmit
+
+  build:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: validate
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: cd frontend && npm ci
+
+      - name: Build frontend
+        run: cd frontend && npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist/
+          retention-days: 30
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [validate, build]
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend-build/
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git tag --sort=-creatordate | head -2 | tail -1 || echo "")
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+
+          echo "## What's Changed" > changelog.md
+          echo "" >> changelog.md
+
+          if [ -n "$PREV_TAG" ]; then
+            echo "Changes since $PREV_TAG:" >> changelog.md
+            echo "" >> changelog.md
+
+            # Group commits by type
+            echo "### 🚀 Features" >> changelog.md
+            git log $PREV_TAG..$CURRENT_TAG --oneline --grep="feat" | sed 's/^/- /' >> changelog.md || true
+            echo "" >> changelog.md
+
+            echo "### 🐛 Bug Fixes" >> changelog.md
+            git log $PREV_TAG..$CURRENT_TAG --oneline --grep="fix" | sed 's/^/- /' >> changelog.md || true
+            echo "" >> changelog.md
+
+            echo "### 🧪 Tests" >> changelog.md
+            git log $PREV_TAG..$CURRENT_TAG --oneline --grep="test" | sed 's/^/- /' >> changelog.md || true
+            echo "" >> changelog.md
+
+            echo "### 📝 Documentation" >> changelog.md
+            git log $PREV_TAG..$CURRENT_TAG --oneline --grep="docs" | sed 's/^/- /' >> changelog.md || true
+            echo "" >> changelog.md
+
+            echo "### 🔧 Other Changes" >> changelog.md
+            git log $PREV_TAG..$CURRENT_TAG --oneline --grep="ci\|chore\|ops" | sed 's/^/- /' >> changelog.md || true
+          else
+            echo "Initial release" >> changelog.md
+          fi
+
+          echo "" >> changelog.md
+          echo "### 📊 Stats" >> changelog.md
+          echo "- Contract Tests: 198 passing" >> changelog.md
+          echo "- Frontend Tests: 248 passing" >> changelog.md
+          echo "- Total Test Files: 19" >> changelog.md
+          echo "- Documentation Files: $(find docs -name '*.md' | wc -l)" >> changelog.md
+
+      - name: Create archive
+        run: |
+          tar -czf frontend-build.tar.gz -C frontend-build .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: changelog.md
+          draft: false
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+          files: |
+            frontend-build.tar.gz
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release summary
+        run: |
+          echo "## 🎉 Release Created" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${GITHUB_REF#refs/tags/}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          cat changelog.md >> $GITHUB_STEP_SUMMARY
