@@ -21,7 +21,17 @@ BitFlow Finance enables users to lend and borrow STX with predictable, fixed int
 
 **Contract:** `SP1M46W6CVGAMH3ZJD3TKMY5KCY48HWAZK0DYG193.bitflow-vault-core`
 
-[View on Explorer](https://explorer.hiro.so/txid/SP1M46W6CVGAMH3ZJD3TKMY5KCY48HWAZK0DYG193.bitflow-vault-core?chain=mainnet)
+**Deployment TX:** `0xcbcdc451ddce9d53d2d0a4ba616ac09147b101fef41c1cd6cfe20978c49147d1`
+
+**Deployed:** February 10, 2026 | **Cost:** 0.14627 STX
+
+[View Contract on Explorer](https://explorer.hiro.so/txid/SP1M46W6CVGAMH3ZJD3TKMY5KCY48HWAZK0DYG193.bitflow-vault-core?chain=mainnet) | [Deployment Transaction](https://explorer.hiro.so/txid/0xcbcdc451ddce9d53d2d0a4ba616ac09147b101fef41c1cd6cfe20978c49147d1?chain=mainnet)
+
+**Verified Functions (10+ transactions):**
+- ✅ `deposit` - Tested with 1 STX
+- ✅ `borrow` - Tested 0.01 STX loan at 10% for 30 days
+- ✅ `repay` - Successful repayment executed
+- ✅ `withdraw` - Tested 0.8 STX withdrawal
 
 ## Quick Start
 
