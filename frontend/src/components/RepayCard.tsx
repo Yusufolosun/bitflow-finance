@@ -227,14 +227,26 @@ export const RepayCard: React.FC = () => {
       )}
 
       {/* Current Balance */}
-      <div className="bg-gray-50 rounded-lg p-3">
+      <div className={`rounded-lg p-3 ${
+        repaymentAmount && balance < repaymentAmount.totalSTX
+          ? 'bg-red-50 border border-red-200'
+          : 'bg-gray-50'
+      }`}>
         <div className="text-xs text-gray-500 mb-1">Your Current Balance</div>
         <div className="text-xl font-bold text-gray-900">
           {formatSTX(balance)} STX
         </div>
         {repaymentAmount && balance < repaymentAmount.totalSTX && (
-          <div className="text-xs text-red-600 mt-1 font-medium">
-            Insufficient balance for repayment
+          <div className="flex items-center gap-1.5 text-xs text-red-600 mt-1 font-medium">
+            <AlertCircle size={12} className="flex-shrink-0" />
+            <span>
+              Need {formatSTX(repaymentAmount.totalSTX - balance)} more STX to repay
+            </span>
+          </div>
+        )}
+        {repaymentAmount && balance >= repaymentAmount.totalSTX && (
+          <div className="text-xs text-green-600 mt-1 font-medium">
+            ✓ Sufficient balance for full repayment
           </div>
         )}
       </div>

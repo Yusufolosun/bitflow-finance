@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowDownCircle, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
+import { ArrowDownCircle, CheckCircle, XCircle, ExternalLink, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useVault } from '../hooks/useVault';
-import { formatSTX } from '../types/vault';
+import { formatSTX, PROTOCOL_CONSTANTS } from '../types/vault';
 import { getExplorerUrl } from '../config/contracts';
 
 /**
@@ -152,6 +152,31 @@ export const DepositCard: React.FC = () => {
             </span>
           )}
         </div>
+
+        {/* Inline Validation Warnings */}
+        {depositAmount && parseFloat(depositAmount) > 0 && parseFloat(depositAmount) < 0.01 && (
+          <div className="flex items-center gap-2 text-xs text-yellow-700 bg-yellow-50 rounded-lg p-2">
+            <AlertTriangle size={14} className="flex-shrink-0" />
+            <span>Minimum deposit is 0.01 STX</span>
+          </div>
+        )}
+        {depositAmount && parseFloat(depositAmount) > balanceSTX && (
+          <div className="flex items-center gap-2 text-xs text-red-700 bg-red-50 rounded-lg p-2">
+            <XCircle size={14} className="flex-shrink-0" />
+            <span>Amount exceeds your available balance of {formatSTX(balanceSTX)} STX</span>
+          </div>
+        )}
+        {depositAmount && parseFloat(depositAmount) > 0 && parseFloat(depositAmount) <= balanceSTX && balanceSTX - parseFloat(depositAmount) < 0.1 && (
+          <div className="flex items-center gap-2 text-xs text-yellow-700 bg-yellow-50 rounded-lg p-2">
+            <AlertTriangle size={14} className="flex-shrink-0" />
+            <span>Keep at least 0.1 STX for transaction fees</span>
+          </div>
+        )}
+        {depositAmount && parseFloat(depositAmount) >= 0.01 && parseFloat(depositAmount) <= balanceSTX && (
+          <div className="text-xs text-gray-400 mt-1">
+            Max borrow after deposit: {formatSTX((userDeposit + parseFloat(depositAmount)) / (PROTOCOL_CONSTANTS.MIN_COLLATERAL_RATIO / 100))} STX
+          </div>
+        )}
       </div>
 
       {/* Deposit Button */}

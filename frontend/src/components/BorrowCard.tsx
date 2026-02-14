@@ -277,6 +277,36 @@ export const BorrowCard: React.FC = () => {
             <span className="text-gray-600 font-semibold">Total Repayment:</span>
             <span className="font-bold text-gray-900">{formatSTX(totalRepayment)} STX</span>
           </div>
+
+          {/* Health Factor Preview */}
+          {amount > 0 && userDeposit > 0 && (
+            <div className="border-t border-blue-200 pt-2 mt-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Projected Health Factor:</span>
+                <span className={`font-bold ${
+                  (userDeposit / amount) * 100 >= 150 ? 'text-green-600' :
+                  (userDeposit / amount) * 100 >= 110 ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                  {((userDeposit / amount) * 100).toFixed(0)}%
+                </span>
+              </div>
+              {(userDeposit / amount) * 100 < 150 && (userDeposit / amount) * 100 >= 110 && (
+                <p className="text-xs text-yellow-700 mt-1">
+                  ⚠️ This borrow would put you near the liquidation zone
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Collateral Sufficiency Warning */}
+      {borrowAmount && requiredCollateral > userDeposit && (
+        <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
+          <AlertCircle className="text-red-600 flex-shrink-0" size={16} />
+          <span className="text-xs text-red-700">
+            Need {formatSTX(requiredCollateral - userDeposit)} more STX deposited as collateral
+          </span>
         </div>
       )}
 
