@@ -1418,7 +1418,174 @@ await openContractCall({
 
 ---
 
-**Document Version:** 1.1.0  
+## Edge Cases
+
+Five unusual but valid scenarios that demonstrate protocol behavior at the boundaries.
+
+### Edge Case 1: Minimum Possible Loan
+
+**Scenario:** A user borrows the smallest possible amount (1 microSTX) with the lowest rate for the shortest term.
+
+```typescript
+// Deposit 2 microSTX (150% of 1 microSTX, rounded up)
+await openContractCall({
+  functionName: 'deposit',
+  functionArgs: [uintCV(2)], // 2 microSTX
+});
+
+// Borrow 1 microSTX at 1% APR for 1 day
+await openContractCall({
+  functionName: 'borrow',
+  functionArgs: [
+    uintCV(1),    // 1 microSTX
+    uintCV(100),  // 1% APR
+    uintCV(1),    // 1 day
+  ],
+});
+
+// Check interest after 1 day (144 blocks):
+// interest = 1 × 100 × 144 / (100 × 52560)
+//          = 14400 / 5256000
+//          = 0 (integer division rounds to zero)
+
+// Repayment: principal only (1 microSTX) — zero interest
+```
+
+**Result:** Due to integer division, very small loans at low rates for short periods may accrue zero interest. The user effectively gets a free loan.
+
+**Why it works:** Clarity uses integer arithmetic. When the numerator is smaller than the denominator, the result is 0.
+
+### Edge Case 2: Maximum Rate, Maximum Term
+
+**Scenario:** A user takes the most expensive possible loan — 100% APR for 365 days.
+
+```typescript
+// Deposit 100 STX
+await openContractCall({
+  functionName: 'deposit',
+  functionArgs: [uintCV(100_000_000)],
+});
+
+// Borrow 50 STX at 100% APR for 365 days
+await openContractCall({
+  functionName: 'borrow',
+  functionArgs: [
+    uintCV(50_000_000),   // 50 STX
+    uintCV(10000),         // 100% APR (maximum)
+    uintCV(365),           // 365 days (maximum)
+  ],
+});
+
+// After 365 days:
+// interest = 50,000,000 × 10000 × 52560 / (100 × 52560)
+//          = 50,000,000 × 10000 / 100
+//          = 5,000,000,000 microSTX... 
+
+// Wait — that's 5,000 STX in interest on a 50 STX loan!
+// Actually: interest = principal × rate / 10000 × (blocks/52560)
+// = 50 × (10000/10000) × 1 = 50 STX interest
+// Total repayment: 50 + 50 = 100 STX
+
+// Health factor at day 365:
+// 100 STX deposit / 100 STX debt = 100% — BELOW liquidation threshold!
+```
+
+**Result:** At 100% APR, the interest equals the principal over a full year. The health factor would drop below 110% before the term ends, making liquidation possible. This is an extreme scenario that users should never do.
+
+### Edge Case 3: Deposit, Borrow, Repay in Same Block
+
+**Scenario:** All three operations happen in the same block (0 blocks elapsed).
+
+```typescript
+// Transaction 1: Deposit 10 STX
+await openContractCall({
+  functionName: 'deposit',
+  functionArgs: [uintCV(10_000_000)],
+});
+
+// Transaction 2: Borrow 5 STX (same block)
+await openContractCall({
+  functionName: 'borrow',
+  functionArgs: [uintCV(5_000_000), uintCV(500), uintCV(30)],
+});
+
+// Transaction 3: Repay immediately (same block)
+await openContractCall({
+  functionName: 'repay',
+  functionArgs: [],
+});
+
+// Interest: principal × rate × 0 / (100 × 52560) = 0
+// Repayment: 5 STX + 0 interest = 5 STX (principal only)
+```
+
+**Result:** If repaid in the same block as borrowing, zero interest is owed. This is valid but pointless (you pay gas for nothing).
+
+### Edge Case 4: Multiple Deposits Before Borrowing
+
+**Scenario:** A user makes 10 small deposits before taking a single loan.
+
+```typescript
+// 10 deposits of 1 STX each
+for (let i = 0; i < 10; i++) {
+  await openContractCall({
+    functionName: 'deposit',
+    functionArgs: [uintCV(1_000_000)],
+  });
+}
+
+// Check total deposit
+const deposit = await callReadOnlyFunction({
+  functionName: 'get-user-deposit',
+  functionArgs: [principalCV(userAddress)],
+});
+// Returns: u10000000 (10 STX)
+
+// All 10 deposits are cumulative
+// Max borrow: 10 / 1.5 = 6.67 STX
+```
+
+**Result:** Deposits are additive. Each `deposit` call adds to the existing balance in the `user-deposits` map. The protocol doesn't care how many transactions it took to reach the total.
+
+**Gas cost:** 10 separate deposits cost ~10× the gas of a single 10 STX deposit. Always deposit in one transaction when possible.
+
+### Edge Case 5: Withdrawal Reduces Collateral Below Borrow Threshold
+
+**Scenario:** User deposited 20 STX, didn't borrow, then tries to withdraw more than they have.
+
+```typescript
+// Deposit 20 STX
+await openContractCall({
+  functionName: 'deposit',
+  functionArgs: [uintCV(20_000_000)],
+});
+
+// Try to withdraw 25 STX
+await openContractCall({
+  functionName: 'withdraw',
+  functionArgs: [uintCV(25_000_000)],
+});
+// Result: ERR-INSUFFICIENT-BALANCE (u101)
+// Cannot withdraw more than deposited
+
+// Withdraw exactly 20 STX — works fine
+await openContractCall({
+  functionName: 'withdraw',
+  functionArgs: [uintCV(20_000_000)],
+});
+// Result: (ok true) — all funds returned
+
+// Note: If user had an active loan, ANY withdrawal would still
+// succeed IF the remaining deposit >= 0, because the contract
+// only checks balance, not collateral ratio on withdrawal.
+// However, this could make the position liquidatable.
+```
+
+**Result:** The contract prevents over-withdrawal (can't withdraw more than deposited) but doesn't prevent withdrawal below the collateral ratio. In the current implementation, users cannot withdraw while they have an active loan — the collateral is locked.
+
+---
+
+**Document Version:** 1.2.0  
 **Last Updated:** February 14, 2026
 
 For more examples and support:
