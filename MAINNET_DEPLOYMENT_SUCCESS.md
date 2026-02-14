@@ -6,27 +6,24 @@
 
 ---
 
-## 🔥 Production Activity (First Hour)
+## 🔥 Production Activity (First Day)
 
-**Within 1 hour of deployment, the protocol successfully processed real user transactions:**
+**The protocol successfully processed real mainnet transactions across all core functions:**
 
-| Time | Transaction | Type | Fee | Status |
-|------|-------------|------|-----|--------|
-| 07:22 UTC | 0xcb...147d1 | Contract Deployment | 146,270 µSTX | ✅ Success |
-| 08:04 UTC | 0xc9...7ba02 | First Deposit | 3,000 µSTX | ✅ Success |
-| 08:13 UTC | 0xbe...dd14b | First Borrow | 3,000 µSTX | ✅ Success |
-| 08:15 UTC | 0x20...fcb60 | First Repayment | 4,187 µSTX | ✅ Success |
-| 08:18 UTC | 0xbb...55f31 | First Withdrawal | 3,000 µSTX | ✅ Success |
+| Function | Transaction ID | Amount | Fee | Status |
+|----------|---------------|--------|-----|--------|
+| Deploy | `0xcbcdc...47d1` | - | 0.14627 STX | ✅ Success |
+| **deposit** | `0xc94d49...ba02` | 1.0 STX | 0.003 STX | ✅ Success |
+| **borrow** | `0xbe7c36...d14b` | 0.01 STX @ 10% APR, 30 days | 0.003 STX | ✅ Success |
+| **repay** | `0x20faab...cb60` | 0.01 STX (principal + interest) | 0.004187 STX | ✅ Success |
+| **withdraw** | `0xbbb7ae...5f31` | 0.8 STX | 0.003 STX | ✅ Success |
 
-**Protocol Stats After First Hour:**
-- 💰 **Total Value Locked:** 0.28 STX
-- 📊 **Deposits:** 2 transactions
-- 📤 **Borrows:** 2 transactions  
-- ✅ **Repayments:** 2 transactions (100% repayment rate!)
-- 🏦 **Withdrawals:** Multiple successful withdrawals
+**Protocol Stats:**
+- ✅ **All 4 Core Functions Validated**
+- 📊 **Total Transactions:** 10+
+- 💰 **Total Value Processed:** 1.81+ STX
+- ⚡ **Success Rate:** 100%
 - ⚠️ **Liquidations:** 0 (All loans healthy)
-
-**✅ All 4 Core Functions Validated in Production!**
 
 ---
 
@@ -47,14 +44,9 @@
 - **Anchor Mode:** On-chain only
 
 ### Cost Analysis
-- **Deployment Fee:** 146,270 microSTX (0.146270 STX)
-- **USD Cost:** ~$0.18 USD (at $1.20/STX)
-- **Gas Used:**
-  - Read Count: 1
-  - Read Length: 1
-  - Runtime: 687,842
-  - Write Count: 32
-  - Write Length: 16,566
+- **Deployment Fee:** 0.146270 STX
+- **USD Cost:** ~$0.04 USD (at ~$0.27/STX)
+- **Function Call Fees:** 0.003-0.004187 STX per transaction
 
 ---
 
