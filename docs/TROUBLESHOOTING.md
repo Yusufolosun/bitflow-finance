@@ -258,6 +258,117 @@ Before diving into specific issues, check these basics:
 
 ---
 
+## Transaction Failures
+
+Detailed scenarios for when transactions fail on-chain.
+
+### Scenario 1: Transaction rejected by wallet
+
+**What happens:** You click a button, the wallet popup appears, but you get an error before confirming.
+
+**Possible causes:**
+- Post-conditions mismatch (wallet detects unexpected token transfers)
+- Contract address doesn't match expected format
+
+**Fix:** Ensure the app is pointing to the correct mainnet contract. Try disconnecting and reconnecting your wallet.
+
+### Scenario 2: Transaction broadcasts but fails on-chain
+
+**What happens:** You confirm in your wallet, the transaction appears on the explorer, but its status is "Failed" or "Aborted".
+
+**How to diagnose:**
+1. Go to the [Stacks Explorer](https://explorer.hiro.so)
+2. Search for the transaction ID
+3. Look at the "Result" field — it will show the error code (e.g., `(err u105)`)
+4. Cross-reference with the [Error Codes Reference](ERRORS.md)
+
+**Common error codes:**
+
+| Error | Meaning | Quick Fix |
+|---|---|---|
+| `u101` | Insufficient balance for withdrawal | Withdraw less or check deposit |
+| `u102` | Invalid amount (0 or negative) | Enter a positive number |
+| `u103` | Already has a loan | Repay existing loan first |
+| `u105` | Not enough collateral | Deposit more or borrow less |
+| `u106` | No active loan | You have nothing to repay |
+| `u107` | Not liquidatable | Health factor is above 110% |
+| `u108` | Can't self-liquidate | Use a different address |
+
+### Scenario 3: Transaction stuck in mempool
+
+**What happens:** Transaction was broadcasted but hasn't been mined after 30+ minutes.
+
+**Cause:** Network congestion, or the transaction fee was set too low by the wallet.
+
+**Fix:**
+1. Check the mempool explorer for your pending transaction
+2. Most transactions will eventually be mined (within 1–2 hours during congestion)
+3. If you used Leather wallet, it automatically sets competitive fees
+4. Some wallets allow you to "speed up" a pending transaction with a higher fee
+5. If the transaction is dropped from the mempool (usually after ~24 hours), try again
+
+### Scenario 4: Transaction succeeds but UI shows error
+
+**What happens:** The explorer shows the transaction succeeded, but the app displays a failure toast.
+
+**Cause:** The frontend lost connection to the API during polling, or there was a timeout.
+
+**Fix:**
+1. Verify on the explorer that the transaction was successful
+2. Refresh the app page
+3. Your balances will update on the next polling cycle (~10 seconds)
+4. The blockchain state is the source of truth — if the explorer says success, it succeeded
+
+### Scenario 5: Double-click causing duplicate transaction
+
+**What happens:** You accidentally sent two identical transactions.
+
+**Cause:** Clicking the button twice before the wallet popup appeared, or popup was slow.
+
+**Prevention:**
+- The app disables buttons during pending transactions (loading state)
+- Always wait for the wallet popup before clicking again
+
+**Recovery:**
+- If both transactions go through (e.g., two deposits), both are valid — your total deposit is the sum
+- If the second fails (e.g., two borrows), only the first succeeds because `ERR-ALREADY-HAS-LOAN` blocks the second
+
+### Scenario 6: Insufficient STX for gas fee
+
+**What happens:** Transaction fails because you don't have enough STX to cover the transaction fee.
+
+**Cause:** Your entire balance is allocated to the operation, leaving nothing for gas.
+
+**Fix:**
+1. Keep at least 0.01 STX in your wallet for gas fees
+2. If depositing, deposit slightly less than your full balance
+3. Gas costs are typically 0.001–0.003 STX per transaction
+
+### Scenario 7: Contract call with wrong parameters
+
+**What happens:** Transaction fails with an unexpected error.
+
+**Cause:** The frontend passed incorrect parameter types or values.
+
+**Fix:**
+1. Clear browser cache and reload the app
+2. Ensure you're using the latest version
+3. If building a custom integration, check that all amounts are in microSTX (multiply by 1,000,000)
+4. Check parameter types: amounts are `uint`, addresses are `principal`
+
+### Scenario 8: Nonce conflict
+
+**What happens:** Transaction fails with a nonce-related error.
+
+**Cause:** You sent multiple transactions rapidly, and they have conflicting nonces.
+
+**Fix:**
+1. Wait for all pending transactions to confirm or fail
+2. If stuck, some wallets let you reset the nonce
+3. As a last resort, disconnect wallet, clear browser data, and reconnect
+
+---
+
 ## Related Documentation
 
 - [Error Codes Reference](ERRORS.md) — All error codes explained
