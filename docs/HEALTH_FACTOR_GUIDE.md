@@ -186,6 +186,183 @@ Repaying eliminates your debt entirely (BitFlow doesn't support partial repaymen
 
 ---
 
+## Manual Calculation
+
+Step-by-step examples for calculating your health factor by hand.
+
+### The Formula
+
+```
+                    deposit (microSTX) × price × 100
+Health Factor = ──────────────────────────────────────
+                         loan amount (microSTX)
+```
+
+In the contract, price is a scaling factor. When price = 100 (1:1 ratio), the formula simplifies to:
+
+```
+                    deposit × 100
+Health Factor = ─────────────────
+                   loan amount
+```
+
+### Example 1: Basic Calculation
+
+**Given:**
+- Deposit: 15 STX (15,000,000 microSTX)
+- Loan: 10 STX (10,000,000 microSTX)
+- No interest accrued yet
+
+**Calculation:**
+```
+Health Factor = (15,000,000 × 100) / 10,000,000
+              = 1,500,000,000 / 10,000,000
+              = 150
+              → 150%
+```
+
+**Interpretation:** Exactly at the minimum collateral ratio. Safe from liquidation (> 110%) but no margin for error.
+
+### Example 2: With Interest Accrual
+
+**Given:**
+- Deposit: 20 STX (20,000,000 microSTX)
+- Original loan: 10 STX (10,000,000 microSTX)
+- Interest rate: 500 basis points (5% APR)
+- Time elapsed: 60 days (8,640 blocks)
+
+**Step 1 — Calculate interest:**
+```
+interest = principal × rate × blocks / (100 × 52,560)
+         = 10,000,000 × 500 × 8,640 / (100 × 52,560)
+         = 43,200,000,000,000 / 5,256,000
+         = 8,219,178 microSTX
+         ≈ 0.082 STX
+```
+
+**Step 2 — Calculate total debt:**
+```
+total debt = 10,000,000 + 82,191 = 10,082,191 microSTX
+```
+
+**Step 3 — Calculate health factor:**
+```
+Health Factor = (20,000,000 × 100) / 10,082,191
+              = 2,000,000,000 / 10,082,191
+              ≈ 198.4
+              → 198.4%
+```
+
+**Interpretation:** Still very safe. The 60 days of interest only reduced health from 200% to 198.4%.
+
+### Example 3: Finding the Liquidation Point
+
+**Question:** With 20 STX deposit and 10 STX borrow at 5% APR, after how many days does health factor reach 110%?
+
+**Setup:** We need `deposit × 100 / debt = 110`
+
+```
+110 = (20,000,000 × 100) / (10,000,000 + interest)
+
+Solving for total debt:
+total debt = 2,000,000,000 / 110
+           = 18,181,818 microSTX
+
+So interest must reach:
+interest = 18,181,818 - 10,000,000
+         = 8,181,818 microSTX (≈ 8.18 STX)
+```
+
+**Finding the time:**
+```
+8,181,818 = 10,000,000 × 500 × blocks / (100 × 52,560)
+
+blocks = 8,181,818 × 5,256,000 / (10,000,000 × 500)
+       = 43,003,636,608,000 / 5,000,000,000
+       = 8,600 blocks
+
+days = 8,600 / 144 ≈ 59.7 days... 
+
+Wait — that's only ~60 days? Let me recheck.
+
+Actually with deposit 20 STX and borrow 10 STX, starting HF = 200%.
+At 5% APR, annual interest = 0.5 STX on 10 STX.
+To drop from 200% to 110%:
+  debt must reach: 20/1.1 = 18.18 STX
+  interest needed: 18.18 - 10 = 8.18 STX
+  at 5% APR: 8.18 / (10 × 0.05) = 16.36 years
+
+Actually it would take over 16 years — the position is very safe.
+```
+
+**Correct calculation with proper units:**
+```
+interest per year = 10,000,000 × 500 / (100 × 100)
+                  = 500,000 microSTX (0.5 STX/year)
+                  
+years to reach 110% = 8.18 STX / 0.5 STX/year = 16.36 years
+
+At 5% APR with a 200% starting health, it would take over 16 years 
+of interest accrual to reach the liquidation threshold.
+```
+
+**Lesson:** Conservative borrowing (50% ratio) with low rates creates enormous safety margins.
+
+### Example 4: How Much Can I Borrow Safely?
+
+**Given:**
+- Deposit: 25 STX
+- Target health factor: 200% (safe buffer)
+
+**Calculation:**
+```
+200 = (25,000,000 × 100) / loan
+loan = 2,500,000,000 / 200
+loan = 12,500,000 microSTX
+loan = 12.5 STX
+```
+
+**Answer:** Borrow up to 12.5 STX to start with a 200% health factor.
+
+For comparison:
+- Maximum borrow (150%): 25 / 1.5 = 16.67 STX
+- Safe borrow (200%): 25 / 2.0 = 12.50 STX
+- Very safe borrow (250%): 25 / 2.5 = 10.00 STX
+
+### Example 5: How Much Collateral to Add?
+
+**Given:**
+- Current deposit: 15 STX
+- Current debt: 12 STX (principal + interest)
+- Current health: 125% (warning zone)
+- Target health: 200%
+
+**Calculation:**
+```
+200 = ((15,000,000 + X) × 100) / 12,000,000
+
+Solving for X:
+1,500,000,000 + 100X = 2,400,000,000
+100X = 900,000,000
+X = 9,000,000 microSTX
+X = 9 STX
+```
+
+**Answer:** Deposit 9 more STX to reach a health factor of 200%.
+
+### Quick Reference Formulas
+
+| What You Want | Formula |
+|---|---|
+| Health Factor | `deposit × 100 / debt` |
+| Max Borrow (150%) | `deposit / 1.5` |
+| Safe Borrow (200%) | `deposit / 2.0` |
+| Collateral needed for target HF | `(target_HF × debt / 100) - current_deposit` |
+| Daily interest (microSTX) | `principal × rate / (100 × 365 × 100)` |
+| Days until HF reaches threshold | Complex — use the interest formula above |
+
+---
+
 ## Related Documentation
 
 - [Liquidation Guide](LIQUIDATION_GUIDE.md) — What happens at liquidation
