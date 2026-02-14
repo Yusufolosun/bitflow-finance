@@ -709,6 +709,97 @@ npm test
 
 ---
 
+## Gas Costs
+
+Estimated transaction costs for each contract function on mainnet.
+
+| Function | Estimated Cost | Notes |
+|----------|---------------|-------|
+| `deposit` | ~0.01 STX | STX transfer + map write |
+| `withdraw` | ~0.01 STX | Balance check + STX transfer + map update |
+| `borrow` | ~0.015 STX | Collateral check + STX transfer + map write |
+| `repay` | ~0.02 STX | Interest calc + STX transfer + map delete |
+| `liquidate` | ~0.025 STX | Health factor calc + three STX transfers + cleanup |
+| `initialize` | ~0.005 STX | Single variable write (one-time only) |
+
+### Cost Factors
+
+- **Map reads**: `map-get?` costs ~0.001 STX per look-up
+- **Map writes**: `map-set` or `map-delete` costs ~0.002 STX per operation
+- **STX transfers**: `stx-transfer?` costs ~0.003 STX per transfer
+- **Arithmetic**: Negligible (sub-0.001 STX for all calculations)
+- **Read-only calls**: Free — no gas cost
+
+> **Note**: Actual gas costs vary with network congestion. These are estimates based on typical mainnet conditions. The Stacks network uses a fee market, so costs increase during periods of high demand.
+
+---
+
+## Common Patterns
+
+### Deposit → Borrow Flow
+
+The most common usage: deposit collateral, then borrow against it.
+
+```clarity
+;; Step 1: Deposit 15 STX as collateral
+(contract-call? .bitflow-vault-core deposit u15000000)
+
+;; Step 2: Borrow up to 66.67% of deposit
+(contract-call? .bitflow-vault-core borrow u10000000 u500 u30)
+```
+
+**Important**: Both calls must come from the same `tx-sender`. You cannot deposit from one wallet and borrow from another.
+
+### Check Before Borrow
+
+Always check available collateral before borrowing:
+
+```clarity
+;; Read-only: check max borrow amount
+(contract-call? .bitflow-vault-core get-max-borrow-amount tx-sender)
+
+;; Read-only: check required collateral for a desired borrow
+(contract-call? .bitflow-vault-core calculate-required-collateral u5000000)
+```
+
+### Monitor → Repay Flow
+
+Check loan status before repaying:
+
+```clarity
+;; Read-only: check current repayment obligation
+(contract-call? .bitflow-vault-core get-repayment-amount tx-sender)
+
+;; If satisfied, repay (no args — reads loan from map)
+(contract-call? .bitflow-vault-core repay)
+```
+
+### Liquidation Pattern
+
+Liquidators scan for undercollateralized positions:
+
+```clarity
+;; Read-only: check if a borrower is liquidatable
+(contract-call? .bitflow-vault-core is-liquidatable 'SP_BORROWER)
+
+;; If true, execute liquidation
+(contract-call? .bitflow-vault-core liquidate 'SP_BORROWER)
+```
+
+**Liquidator economics**: You pay the borrower's debt and receive their collateral + 5% bonus.
+
+### Incremental Deposits
+
+Users can deposit multiple times. Deposits are additive:
+
+```clarity
+(contract-call? .bitflow-vault-core deposit u5000000)  ;; Balance: 5 STX
+(contract-call? .bitflow-vault-core deposit u5000000)  ;; Balance: 10 STX
+(contract-call? .bitflow-vault-core deposit u5000000)  ;; Balance: 15 STX
+```
+
+---
+
 ## Version History
 
 - **v1.0.0** - Initial release with deposit, withdraw, borrow, repay, and liquidation functionality
