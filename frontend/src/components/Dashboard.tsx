@@ -9,7 +9,9 @@ import { BorrowCard } from './BorrowCard';
 import { RepayCard } from './RepayCard';
 import { HealthMonitor } from './HealthMonitor';
 import { TransactionHistory } from './TransactionHistory';
+import { NetworkIndicator } from './NetworkIndicator';
 import { formatSTX } from '../utils/formatters';
+import { ACTIVE_NETWORK } from '../config/contracts';
 
 /**
  * Dashboard Component
@@ -150,6 +152,7 @@ export const Dashboard: React.FC = () => {
                 <h1 className="text-2xl font-bold text-gray-900">BitFlow Finance</h1>
                 <p className="text-sm text-gray-500">Decentralized Lending Protocol</p>
               </div>
+              <NetworkIndicator />
             </div>
             <WalletConnect />
           </div>
@@ -327,7 +330,7 @@ export const Dashboard: React.FC = () => {
               <div>
                 <div className="text-sm opacity-90 mb-1">Network</div>
                 <div className="text-2xl font-bold">
-                  Stacks Testnet
+                  Stacks {ACTIVE_NETWORK === 'mainnet' ? 'Mainnet' : 'Testnet'}
                 </div>
               </div>
             </div>

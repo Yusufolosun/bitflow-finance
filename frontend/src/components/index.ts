@@ -10,3 +10,4 @@ export { Dashboard } from './Dashboard';
 export { StatsCard } from './StatsCard';
 export { TransactionHistory } from './TransactionHistory';
 export { LiquidationList } from './LiquidationList';
+export { NetworkIndicator } from './NetworkIndicator';

@@ -11,7 +11,7 @@ export const NETWORK_CONFIG = {
 };
 
 // Toggle between 'testnet' and 'mainnet'
-export const ACTIVE_NETWORK: 'testnet' | 'mainnet' = 'testnet';
+export const ACTIVE_NETWORK: 'testnet' | 'mainnet' = 'mainnet';
 
 // Get the active network instance
 export const getNetwork = () => NETWORK_CONFIG[ACTIVE_NETWORK];
