@@ -1,0 +1,72 @@
+#!/bin/sh
+# Pre-commit hook: run quality checks before each commit
+# Install: npx husky install && npx husky add .husky/pre-commit
+
+set -e
+
+echo "🔍 Running pre-commit checks..."
+
+# ──────────────────────────────────────────────
+# 1. Check for console.log in staged frontend files
+# ──────────────────────────────────────────────
+STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -E 'frontend/src/.*\.(ts|tsx)$' | grep -v '\.test\.' | grep -v '__tests__' || true)
+if [ -n "$STAGED_TS" ]; then
+  CONSOLE_FOUND=0
+  for file in $STAGED_TS; do
+    if grep -n 'console\.\(log\|debug\|info\)' "$file" 2>/dev/null; then
+      echo "⚠️  console statement found in: $file"
+      CONSOLE_FOUND=1
+    fi
+  done
+  if [ "$CONSOLE_FOUND" -eq 1 ]; then
+    echo "⚠️  Warning: console statements detected in staged files (not blocking)"
+  fi
+fi
+
+# ──────────────────────────────────────────────
+# 2. TypeScript type check on staged frontend files
+# ──────────────────────────────────────────────
+if [ -n "$STAGED_TS" ]; then
+  echo "📝 Running TypeScript check..."
+  (cd frontend && npx tsc --noEmit 2>&1) || {
+    echo "❌ TypeScript check failed. Fix type errors before committing."
+    exit 1
+  }
+  echo "✅ TypeScript check passed"
+fi
+
+# ──────────────────────────────────────────────
+# 3. Run contract tests if contract files changed
+# ──────────────────────────────────────────────
+STAGED_CONTRACTS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '(contracts/.*\.clar|tests/.*\.test\.ts)$' || true)
+if [ -n "$STAGED_CONTRACTS" ]; then
+  echo "🧪 Running contract tests..."
+  npm test 2>&1 || {
+    echo "❌ Contract tests failed. Fix tests before committing."
+    exit 1
+  }
+  echo "✅ Contract tests passed"
+fi
+
+# ──────────────────────────────────────────────
+# 4. Run frontend tests if frontend files changed
+# ──────────────────────────────────────────────
+STAGED_FRONTEND=$(git diff --cached --name-only --diff-filter=ACM | grep -E 'frontend/src/.*\.(ts|tsx)$' || true)
+if [ -n "$STAGED_FRONTEND" ]; then
+  echo "🧪 Running frontend tests..."
+  (cd frontend && npx vitest run --pool=forks 2>&1) || {
+    echo "❌ Frontend tests failed. Fix tests before committing."
+    exit 1
+  }
+  echo "✅ Frontend tests passed"
+fi
+
+# ──────────────────────────────────────────────
+# 5. Check for large files
+# ──────────────────────────────────────────────
+LARGE_FILES=$(git diff --cached --name-only --diff-filter=ACM | xargs -I{} sh -c 'test -f "{}" && wc -c < "{}"' 2>/dev/null | awk '$1 > 1048576' || true)
+if [ -n "$LARGE_FILES" ]; then
+  echo "⚠️  Warning: Large files detected (>1MB). Consider using Git LFS."
+fi
+
+echo "✅ Pre-commit checks passed!"
