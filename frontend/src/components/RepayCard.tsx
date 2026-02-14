@@ -101,18 +101,18 @@ export const RepayCard: React.FC = () => {
   // No active loan
   if (!activeLoan) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="card-elevated">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-gray-100 rounded-lg">
-            <DollarSign className="text-gray-400" size={24} />
+          <div className="p-3 bg-gray-100 rounded-xl">
+            <DollarSign className="text-gray-400" size={22} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900">Repay Loan</h3>
+            <h3 className="text-lg font-bold text-gray-900 tracking-tight">Repay Loan</h3>
             <p className="text-sm text-gray-500">No active loan to repay</p>
           </div>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-6 text-center">
+        <div className="bg-gray-50/80 rounded-xl p-6 text-center border border-gray-100">
           <AlertCircle className="mx-auto text-gray-400 mb-3" size={48} />
           <p className="text-gray-600 mb-1 font-medium">No Active Loan</p>
           <p className="text-sm text-gray-500">
@@ -127,14 +127,14 @@ export const RepayCard: React.FC = () => {
   const isOverdue = progress >= 100;
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
+    <div className="card-elevated space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className={`p-3 rounded-lg ${isOverdue ? 'bg-red-100' : 'bg-blue-100'}`}>
-          <DollarSign className={isOverdue ? 'text-red-600' : 'text-blue-600'} size={24} />
+        <div className={`p-3 rounded-xl ${isOverdue ? 'bg-red-50' : 'bg-blue-50'}`}>
+          <DollarSign className={isOverdue ? 'text-red-600' : 'text-blue-600'} size={22} />
         </div>
         <div>
-          <h3 className="text-xl font-bold text-gray-900">Repay Loan</h3>
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight">Repay Loan</h3>
           <p className="text-sm text-gray-500">Pay back your active loan</p>
         </div>
       </div>
@@ -164,7 +164,7 @@ export const RepayCard: React.FC = () => {
       </div>
 
       {/* Loan Details */}
-      <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+      <div className="bg-gray-50/80 rounded-xl p-4 space-y-3 border border-gray-100">
         <h4 className="font-semibold text-gray-900 text-sm mb-2">Loan Details</h4>
         
         <div className="flex justify-between text-sm">
@@ -245,7 +245,7 @@ export const RepayCard: React.FC = () => {
           </div>
         )}
         {repaymentAmount && balanceSTX >= repaymentAmount.totalSTX && (
-          <div className="text-xs text-green-600 mt-1 font-medium">
+          <div className="text-xs text-emerald-600 mt-1 font-medium">
             ✓ Sufficient balance for full repayment
           </div>
         )}
@@ -260,11 +260,11 @@ export const RepayCard: React.FC = () => {
           !repaymentAmount ||
           balanceSTX < (repaymentAmount?.totalSTX || 0)
         }
-        className={`w-full py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 ${
+        className={`w-full btn py-3 disabled:opacity-50 disabled:cursor-not-allowed ${
           isOverdue
-            ? 'bg-red-600 hover:bg-red-700 text-white'
-            : 'bg-blue-600 hover:bg-blue-700 text-white'
-        } disabled:bg-gray-300 disabled:cursor-not-allowed`}
+            ? 'btn-danger'
+            : 'btn-primary'
+        }`}
       >
         {txStatus === 'pending' && (
           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -274,16 +274,16 @@ export const RepayCard: React.FC = () => {
 
       {/* Status Messages */}
       {txStatus === 'success' && (
-        <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-          <CheckCircle className="text-green-600" size={20} />
-          <span className="text-sm text-green-700 font-medium">
+        <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+          <CheckCircle className="text-emerald-600" size={20} />
+          <span className="text-sm text-emerald-700 font-medium">
             Loan repaid successfully! Collateral released.
           </span>
         </div>
       )}
 
       {txStatus === 'error' && errorMessage && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
+        <div className="flex items-center gap-2 p-3 bg-red-50 rounded-xl border border-red-100">
           <XCircle className="text-red-600" size={20} />
           <span className="text-sm text-red-700 font-medium">{errorMessage}</span>
         </div>

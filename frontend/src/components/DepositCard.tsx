@@ -103,22 +103,22 @@ export const DepositCard: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
+    <div className="card-elevated space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="p-3 bg-primary-100 rounded-lg">
-          <ArrowDownCircle className="text-primary-600" size={24} />
+        <div className="p-3 bg-primary-50 rounded-xl">
+          <ArrowDownCircle className="text-primary-600" size={22} />
         </div>
         <div>
-          <h3 className="text-xl font-bold text-gray-900">Deposit STX</h3>
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight">Deposit STX</h3>
           <p className="text-sm text-gray-500">Deposit to earn and borrow</p>
         </div>
       </div>
 
       {/* Current Deposit Display */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <div className="text-xs text-gray-500 mb-1">Your Total Deposit</div>
-        <div className="text-2xl font-bold text-gray-900">
+      <div className="bg-gray-50/80 rounded-xl p-4 border border-gray-100">
+        <div className="text-xs font-medium text-gray-500 mb-1">Your Total Deposit</div>
+        <div className="text-2xl font-bold text-gray-900 tracking-tight">
           {formatSTX(userDeposit)} STX
         </div>
       </div>
@@ -134,12 +134,12 @@ export const DepositCard: React.FC = () => {
             value={depositAmount}
             onChange={(e) => setDepositAmount(e.target.value)}
             placeholder="0.00"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="input"
             disabled={txStatus === 'pending'}
           />
           <button
             onClick={handleMaxClick}
-            className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1 bg-primary-100 text-primary-600 rounded text-sm font-medium hover:bg-primary-200 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1 bg-primary-50 text-primary-600 rounded-lg text-xs font-bold hover:bg-primary-100 transition-colors border border-primary-200"
             disabled={txStatus === 'pending'}
           >
             MAX
@@ -184,7 +184,7 @@ export const DepositCard: React.FC = () => {
       <button
         onClick={handleDeposit}
         disabled={!address || txStatus === 'pending' || !depositAmount}
-        className="w-full py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+        className="w-full btn btn-primary py-3 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {txStatus === 'pending' && (
           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -194,14 +194,14 @@ export const DepositCard: React.FC = () => {
 
       {/* Status Messages */}
       {txStatus === 'success' && (
-        <div className="p-3 bg-green-50 rounded-lg space-y-2">
+        <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 space-y-2">
           <div className="flex items-center gap-2">
-            <CheckCircle className="text-green-600" size={20} />
-            <span className="text-sm text-green-700 font-medium">
+            <CheckCircle className="text-emerald-600" size={20} />
+            <span className="text-sm text-emerald-700 font-medium">
               Deposit successful! Balance updated.
             </span>
           </div>
-          <p className="text-xs text-green-600">
+          <p className="text-xs text-emerald-600">
             Tip: Click "Refresh Data" on Dashboard to update your total deposit view.
           </p>
           {lastTxId && (
@@ -209,7 +209,7 @@ export const DepositCard: React.FC = () => {
               href={getExplorerUrl(lastTxId)}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs text-green-600 hover:text-green-700 hover:underline"
+              className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 hover:underline"
             >
               View transaction
               <ExternalLink size={12} />
@@ -219,7 +219,7 @@ export const DepositCard: React.FC = () => {
       )}
 
       {txStatus === 'error' && errorMessage && (
-        <div className="p-3 bg-red-50 rounded-lg space-y-2">
+        <div className="p-3 bg-red-50 rounded-xl border border-red-100 space-y-2">
           <div className="flex items-center gap-2">
             <XCircle className="text-red-600" size={20} />
             <span className="text-sm text-red-700 font-medium">{errorMessage}</span>

@@ -23,7 +23,7 @@ interface StatsCardProps {
 
 /**
  * StatsCard Component
- * Reusable card component for displaying statistics
+ * Reusable card for displaying protocol statistics with colored accent
  */
 export const StatsCard: React.FC<StatsCardProps> = ({
   icon,
@@ -35,44 +35,44 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 }) => {
   const colorClasses = {
     blue: {
-      bg: 'bg-blue-100',
+      bg: 'bg-blue-50',
       text: 'text-blue-600',
-      border: 'border-blue-200',
+      accent: 'border-t-blue-500',
     },
     green: {
-      bg: 'bg-green-100',
-      text: 'text-green-600',
-      border: 'border-green-200',
+      bg: 'bg-emerald-50',
+      text: 'text-emerald-600',
+      accent: 'border-t-emerald-500',
     },
     purple: {
-      bg: 'bg-purple-100',
+      bg: 'bg-purple-50',
       text: 'text-purple-600',
-      border: 'border-purple-200',
+      accent: 'border-t-purple-500',
     },
     orange: {
-      bg: 'bg-orange-100',
+      bg: 'bg-orange-50',
       text: 'text-orange-600',
-      border: 'border-orange-200',
+      accent: 'border-t-orange-500',
     },
     red: {
-      bg: 'bg-red-100',
+      bg: 'bg-red-50',
       text: 'text-red-600',
-      border: 'border-red-200',
+      accent: 'border-t-red-500',
     },
     yellow: {
-      bg: 'bg-yellow-100',
-      text: 'text-yellow-600',
-      border: 'border-yellow-200',
+      bg: 'bg-amber-50',
+      text: 'text-amber-600',
+      accent: 'border-t-amber-500',
     },
   };
 
   const colors = colorClasses[color];
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow">
+    <div className={`card-elevated card-hover border-t-2 ${colors.accent}`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
-        <div className={`p-3 ${colors.bg} rounded-lg`}>
+        <div className={`p-2.5 ${colors.bg} rounded-xl`}>
           <div className={colors.text}>{icon}</div>
         </div>
         
@@ -80,8 +80,8 @@ export const StatsCard: React.FC<StatsCardProps> = ({
           <div
             className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
               trend.isPositive
-                ? 'bg-green-100 text-green-700'
-                : 'bg-red-100 text-red-700'
+                ? 'bg-emerald-50 text-emerald-700'
+                : 'bg-red-50 text-red-700'
             }`}
           >
             {trend.isPositive ? (
@@ -96,10 +96,10 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 
       {/* Content */}
       <div>
-        <div className="text-sm text-gray-500 mb-2">{label}</div>
-        <div className="text-2xl font-bold text-gray-900 mb-1">{value}</div>
+        <div className="text-sm font-medium text-gray-500 mb-1.5">{label}</div>
+        <div className="text-2xl font-bold text-gray-900 tracking-tight">{value}</div>
         {subtitle && (
-          <div className="text-xs text-gray-600">{subtitle}</div>
+          <div className="text-xs text-gray-500 mt-1">{subtitle}</div>
         )}
       </div>
     </div>

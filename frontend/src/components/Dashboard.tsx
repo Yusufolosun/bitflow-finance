@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TrendingUp, DollarSign, Activity, Users } from 'lucide-react';
+import { TrendingUp, DollarSign, Activity, Users, Layers } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useVault } from '../hooks/useVault';
 import { StatsCard } from './StatsCard';
@@ -128,18 +128,18 @@ export const Dashboard: React.FC = () => {
     : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gray-50 bg-grid-pattern">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <header className="glass sticky top-0 z-50 border-b border-gray-200/60">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <TrendingUp className="text-white" size={24} />
+              <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center shadow-sm">
+                <Layers className="text-white" size={22} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">BitFlow Finance</h1>
-                <p className="text-sm text-gray-500">Decentralized Lending Protocol</p>
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight">BitFlow Finance</h1>
+                <p className="text-xs text-gray-500 font-medium">Decentralized Lending Protocol</p>
               </div>
               <NetworkIndicator />
             </div>
@@ -152,11 +152,11 @@ export const Dashboard: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Protocol Stats */}
         <section className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Protocol Overview</h2>
+              <h2 className="section-title">Protocol Overview</h2>
               {statsLastUpdated && (
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-400 mt-0.5">
                   Updated {statsLastUpdated.toLocaleTimeString()} · auto-refreshes every 30s
                 </p>
               )}
@@ -164,7 +164,7 @@ export const Dashboard: React.FC = () => {
             <button
               onClick={refreshStats}
               disabled={statsLoading}
-              className="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
+              className="btn btn-ghost text-xs px-3 py-1.5 rounded-lg"
             >
               {statsLoading ? 'Loading...' : 'Refresh Stats'}
             </button>
@@ -184,27 +184,27 @@ export const Dashboard: React.FC = () => {
 
           {/* Stats Grid */}
           {protocolStats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             <StatsCard
-              icon={<DollarSign size={24} />}
+              icon={<DollarSign size={22} />}
               label="Total Value Locked"
               value={formatSTX(totalValueLocked) + ' STX'}
               color="blue"
             />
             <StatsCard
-              icon={<TrendingUp size={24} />}
+              icon={<TrendingUp size={22} />}
               label="Total Borrowed"
               value={formatSTX(totalBorrowed) + ' STX'}
               color="green"
             />
             <StatsCard
-              icon={<Activity size={24} />}
+              icon={<Activity size={22} />}
               label="Utilization Rate"
               value={utilizationRate.toFixed(1) + '%'}
               color="purple"
             />
             <StatsCard
-              icon={<Users size={24} />}
+              icon={<Users size={22} />}
               label="Active Loans"
               value={activeUsers.toString()}
               color="orange"
@@ -216,12 +216,12 @@ export const Dashboard: React.FC = () => {
         {/* User Portfolio */}
         {address && (
           <section className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Your Portfolio</h2>
+            <div className="flex justify-between items-center mb-5">
+              <h2 className="section-title">Your Portfolio</h2>
               <button
                 onClick={refreshUserData}
                 disabled={isRefreshing}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                className="btn btn-primary text-sm px-4 py-2"
               >
                 <svg 
                   className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} 
@@ -237,47 +237,47 @@ export const Dashboard: React.FC = () => {
             
             {/* Error Message */}
             {refreshError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2">
+                <svg className="w-5 h-5 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="text-sm text-red-700">{refreshError}</span>
               </div>
             )}
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="text-sm text-gray-500 mb-2">Total Deposited</div>
-                <div className="text-3xl font-bold text-gray-900 mb-1">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="card-elevated card-hover">
+                <div className="text-sm font-medium text-gray-500 mb-2">Total Deposited</div>
+                <div className="text-3xl font-bold text-gray-900 tracking-tight mb-1">
                   {formatSTX(userDeposit)} STX
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-500">
                   ≈ ${(userDeposit * 1.5).toLocaleString()} USD
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="text-sm text-gray-500 mb-2">Active Loan</div>
-                <div className="text-3xl font-bold text-gray-900 mb-1">
+              <div className="card-elevated card-hover">
+                <div className="text-sm font-medium text-gray-500 mb-2">Active Loan</div>
+                <div className="text-3xl font-bold text-gray-900 tracking-tight mb-1">
                   {userLoan ? formatSTX(userLoan.amountSTX) : '0.00'} STX
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-500">
                   {userLoan 
                     ? `${userLoan.interestRatePercent}% APR` 
                     : 'No active loan'}
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <div className="text-sm text-gray-500 mb-2">Health Factor</div>
-                <div className={`text-3xl font-bold mb-1 ${
+              <div className="card-elevated card-hover">
+                <div className="text-sm font-medium text-gray-500 mb-2">Health Factor</div>
+                <div className={`text-3xl font-bold tracking-tight mb-1 ${
                   !userLoan ? 'text-gray-400' :
-                  userHealthFactor && userHealthFactor >= 150 ? 'text-green-600' :
-                  userHealthFactor && userHealthFactor >= 110 ? 'text-yellow-600' : 'text-red-600'
+                  userHealthFactor && userHealthFactor >= 150 ? 'text-emerald-600' :
+                  userHealthFactor && userHealthFactor >= 110 ? 'text-amber-600' : 'text-red-600'
                 }`}>
                   {userHealthFactor ? userHealthFactor.toFixed(0) + '%' : 'N/A'}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-500">
                   {!userLoan ? 'No active loan' :
                    userHealthFactor && userHealthFactor >= 150 ? 'Healthy' :
                    userHealthFactor && userHealthFactor >= 110 ? 'At Risk' : 'Critical'}
@@ -290,20 +290,22 @@ export const Dashboard: React.FC = () => {
         {/* Action Cards */}
         {!address ? (
           <section className="mb-8">
-            <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-              <Activity className="mx-auto text-gray-400 mb-4" size={64} />
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="card-elevated p-12 text-center gradient-mesh rounded-2xl">
+              <div className="w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Layers className="text-white" size={32} />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3 tracking-tight">
                 Welcome to BitFlow Finance
               </h3>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Connect your wallet to start depositing, borrowing, and earning with your STX tokens.
+              <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
+                Connect your wallet to start depositing, borrowing, and earning with your STX tokens on Stacks.
               </p>
               <WalletConnect />
             </div>
           </section>
         ) : (
           <section className="mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions</h2>
+            <h2 className="section-title mb-5">Actions</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left Column */}
               <div className="space-y-6">
@@ -323,30 +325,34 @@ export const Dashboard: React.FC = () => {
         {/* Transaction History */}
         {address && (
           <section className="mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Transaction History</h2>
+            <h2 className="section-title mb-5">Transaction History</h2>
             <TransactionHistory />
           </section>
         )}
 
         {/* Quick Stats Footer */}
         <section>
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="gradient-dark rounded-2xl p-8 text-white shadow-elevated relative overflow-hidden">
+            {/* Subtle decorative elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
+            
+            <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8">
               <div>
-                <div className="text-sm opacity-90 mb-1">Your Wallet Balance</div>
-                <div className="text-2xl font-bold">
+                <div className="text-sm text-gray-400 mb-1 font-medium">Your Wallet Balance</div>
+                <div className="text-2xl font-bold tracking-tight">
                   {address ? formatSTX(balanceSTX) : '0.00'} STX
                 </div>
               </div>
               <div>
-                <div className="text-sm opacity-90 mb-1">Total Repaid (Protocol)</div>
-                <div className="text-2xl font-bold">
+                <div className="text-sm text-gray-400 mb-1 font-medium">Total Repaid (Protocol)</div>
+                <div className="text-2xl font-bold tracking-tight">
                   {formatSTX(totalRepaid)} STX
                 </div>
               </div>
               <div>
-                <div className="text-sm opacity-90 mb-1">Network</div>
-                <div className="text-2xl font-bold">
+                <div className="text-sm text-gray-400 mb-1 font-medium">Network</div>
+                <div className="text-2xl font-bold tracking-tight">
                   Stacks {ACTIVE_NETWORK === 'mainnet' ? 'Mainnet' : 'Testnet'}
                 </div>
               </div>
@@ -356,17 +362,20 @@ export const Dashboard: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-16">
+      <footer className="border-t border-gray-200/60 mt-16 bg-white/60 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-sm text-gray-500">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="w-5 h-5 gradient-primary rounded-md flex items-center justify-center">
+                <Layers className="text-white" size={12} />
+              </div>
               © 2026 BitFlow Finance. Built on Stacks.
             </div>
             <div className="flex gap-6">
-              <a href="#" className="text-sm text-gray-600 hover:text-gray-900">Docs</a>
-              <a href="#" className="text-sm text-gray-600 hover:text-gray-900">GitHub</a>
-              <a href="#" className="text-sm text-gray-600 hover:text-gray-900">Discord</a>
-              <a href="#" className="text-sm text-gray-600 hover:text-gray-900">Twitter</a>
+              <a href="#" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Docs</a>
+              <a href="#" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">GitHub</a>
+              <a href="#" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Discord</a>
+              <a href="#" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Twitter</a>
             </div>
           </div>
         </div>

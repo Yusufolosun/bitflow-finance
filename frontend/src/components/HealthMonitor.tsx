@@ -68,27 +68,27 @@ export const HealthMonitor: React.FC = () => {
   // No active loan
   if (!activeLoan) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="card-elevated">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-green-100 rounded-lg">
-            <CheckCircle className="text-green-600" size={24} />
+          <div className="p-3 bg-emerald-50 rounded-xl">
+            <CheckCircle className="text-emerald-600" size={22} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900">Health Monitor</h3>
+            <h3 className="text-lg font-bold text-gray-900 tracking-tight">Health Monitor</h3>
             <p className="text-sm text-gray-500">Your position is healthy</p>
           </div>
         </div>
 
-        <div className="bg-green-50 rounded-lg p-6 text-center">
-          <CheckCircle className="mx-auto text-green-600 mb-3" size={48} />
-          <p className="text-green-700 mb-1 font-medium">No Active Position</p>
+        <div className="bg-emerald-50/80 rounded-xl p-6 text-center border border-emerald-100">
+          <CheckCircle className="mx-auto text-emerald-600 mb-3" size={48} />
+          <p className="text-emerald-700 mb-1 font-medium">No Active Position</p>
           <p className="text-sm text-gray-600">
             You don't have any active loans. Your collateral is safe.
           </p>
         </div>
 
         {userDeposit && userDeposit.amountSTX > 0 && (
-          <div className="mt-4 bg-gray-50 rounded-lg p-4">
+          <div className="mt-4 bg-gray-50/80 rounded-xl p-4 border border-gray-100">
             <div className="text-xs text-gray-500 mb-1">Total Deposited</div>
             <div className="text-2xl font-bold text-gray-900">
               {formatSTX(userDeposit.amountSTX)} STX
@@ -103,41 +103,41 @@ export const HealthMonitor: React.FC = () => {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
+    <div className="card-elevated space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className={`p-3 rounded-lg ${
-          healthColor === 'green' ? 'bg-green-100' :
-          healthColor === 'yellow' ? 'bg-yellow-100' : 'bg-red-100'
+        <div className={`p-3 rounded-xl ${
+          healthColor === 'green' ? 'bg-emerald-50' :
+          healthColor === 'yellow' ? 'bg-amber-50' : 'bg-red-50'
         }`}>
           <Activity className={`${
-            healthColor === 'green' ? 'text-green-600' :
-            healthColor === 'yellow' ? 'text-yellow-600' : 'text-red-600'
-          }`} size={24} />
+            healthColor === 'green' ? 'text-emerald-600' :
+            healthColor === 'yellow' ? 'text-amber-600' : 'text-red-600'
+          }`} size={22} />
         </div>
         <div>
-          <h3 className="text-xl font-bold text-gray-900">Health Monitor</h3>
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight">Health Monitor</h3>
           <p className="text-sm text-gray-500">Track your position health</p>
         </div>
       </div>
 
       {/* Health Factor Display */}
       {healthFactor && (
-        <div className={`rounded-xl p-6 ${
-          healthColor === 'green' ? 'bg-green-50' :
-          healthColor === 'yellow' ? 'bg-yellow-50' : 'bg-red-50'
+        <div className={`rounded-xl p-6 border ${
+          healthColor === 'green' ? 'bg-emerald-50/80 border-emerald-100' :
+          healthColor === 'yellow' ? 'bg-amber-50/80 border-amber-100' : 'bg-red-50/80 border-red-100'
         }`}>
           <div className="text-center">
             <div className="text-sm font-medium text-gray-600 mb-2">Health Factor</div>
-            <div className={`text-5xl font-bold mb-2 ${
-              healthColor === 'green' ? 'text-green-600' :
-              healthColor === 'yellow' ? 'text-yellow-600' : 'text-red-600'
+            <div className={`text-5xl font-bold mb-2 tracking-tight ${
+              healthColor === 'green' ? 'text-emerald-600' :
+              healthColor === 'yellow' ? 'text-amber-600' : 'text-red-600'
             }`}>
               {healthFactor.healthFactorPercent.toFixed(0)}%
             </div>
             <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${
-              healthColor === 'green' ? 'bg-green-200 text-green-800' :
-              healthColor === 'yellow' ? 'bg-yellow-200 text-yellow-800' : 'bg-red-200 text-red-800'
+              healthColor === 'green' ? 'bg-emerald-200 text-emerald-800' :
+              healthColor === 'yellow' ? 'bg-amber-200 text-amber-800' : 'bg-red-200 text-red-800'
             }`}>
               {healthColor === 'green' && <CheckCircle size={16} />}
               {healthColor === 'yellow' && <AlertTriangle size={16} />}
@@ -161,8 +161,8 @@ export const HealthMonitor: React.FC = () => {
           <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
             <div
               className={`h-3 transition-all ${
-                collateralRatio >= 150 ? 'bg-green-600' :
-                collateralRatio >= 110 ? 'bg-yellow-500' : 'bg-red-600'
+                collateralRatio >= 150 ? 'bg-emerald-600' :
+                collateralRatio >= 110 ? 'bg-amber-500' : 'bg-red-600'
               }`}
               style={{ width: `${Math.min((collateralRatio / 200) * 100, 100)}%` }}
             ></div>
@@ -175,7 +175,7 @@ export const HealthMonitor: React.FC = () => {
       )}
 
       {/* Position Details */}
-      <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+      <div className="bg-gray-50/80 rounded-xl p-4 space-y-3 border border-gray-100">
         <h4 className="font-semibold text-gray-900 text-sm mb-2">Position Details</h4>
         
         <div className="flex justify-between text-sm">

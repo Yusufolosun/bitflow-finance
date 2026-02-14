@@ -162,7 +162,7 @@ export const TransactionHistory: React.FC = () => {
   // Icon helpers
   const getTransactionIcon = (type: TransactionType) => {
     switch (type) {
-      case 'deposit': return <ArrowDownCircle size={20} className="text-green-600" />;
+      case 'deposit': return <ArrowDownCircle size={20} className="text-emerald-600" />;
       case 'withdraw': return <ArrowUpCircle size={20} className="text-blue-600" />;
       case 'borrow': return <TrendingUp size={20} className="text-purple-600" />;
       case 'repay': return <DollarSign size={20} className="text-orange-600" />;
@@ -181,7 +181,7 @@ export const TransactionHistory: React.FC = () => {
 
   const getBadgeColor = (type: TransactionType) => {
     switch (type) {
-      case 'deposit': return 'bg-green-100 text-green-800 border-green-200';
+      case 'deposit': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case 'withdraw': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'borrow': return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'repay': return 'bg-orange-100 text-orange-800 border-orange-200';
@@ -192,7 +192,7 @@ export const TransactionHistory: React.FC = () => {
 
   const getTransactionColor = (type: TransactionType) => {
     switch (type) {
-      case 'deposit': return 'bg-green-50 border-green-200';
+      case 'deposit': return 'bg-emerald-50 border-emerald-200';
       case 'withdraw': return 'bg-blue-50 border-blue-200';
       case 'borrow': return 'bg-purple-50 border-purple-200';
       case 'repay': return 'bg-orange-50 border-orange-200';
@@ -202,15 +202,15 @@ export const TransactionHistory: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="card-elevated">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-gray-100 rounded-lg">
+          <div className="p-3 bg-gray-100 rounded-xl">
             <Clock className="text-gray-600" size={24} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900">Transaction History</h3>
+            <h3 className="text-lg font-bold text-gray-900 tracking-tight">Transaction History</h3>
             <p className="text-sm text-gray-500">
               {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''} from blockchain
             </p>
@@ -220,7 +220,7 @@ export const TransactionHistory: React.FC = () => {
         <button
           onClick={fetchTransactions}
           disabled={isLoading}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+          className="p-2 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50"
           title="Refresh transactions"
         >
           <RefreshCw size={16} className={`text-gray-600 ${isLoading ? 'animate-spin' : ''}`} />
@@ -233,9 +233,9 @@ export const TransactionHistory: React.FC = () => {
           <button
             key={type}
             onClick={() => setFilter(type)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors capitalize ${
               filter === type
-                ? 'bg-blue-600 text-white'
+                ? 'bg-primary-600 text-white shadow-sm'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -294,7 +294,7 @@ export const TransactionHistory: React.FC = () => {
           {filteredTransactions.map((tx) => (
             <div
               key={tx.id}
-              className={`border rounded-lg p-4 transition-all hover:shadow-md ${getTransactionColor(tx.type)}`}
+              className={`border rounded-xl p-4 transition-all hover:shadow-md ${getTransactionColor(tx.type)}`}
             >
               <div className="flex items-center justify-between">
                 {/* Left: Icon & Details */}
@@ -336,9 +336,9 @@ export const TransactionHistory: React.FC = () => {
                 {/* Right: Amount */}
                 <div className="text-right flex-shrink-0 ml-4">
                   {tx.amount > 0 ? (
-                    <div className={`text-lg font-bold ${
+                    <div className={`text-lg font-bold tabular-nums ${
                       tx.type === 'deposit' || tx.type === 'borrow'
-                        ? 'text-green-600'
+                        ? 'text-emerald-600'
                         : 'text-red-600'
                     }`}>
                       {tx.type === 'deposit' || tx.type === 'borrow' ? '+' : '-'}
@@ -359,8 +359,8 @@ export const TransactionHistory: React.FC = () => {
         <div className="mt-6 pt-6 border-t border-gray-200">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-xs text-gray-500 mb-1">Total Deposits</div>
-              <div className="text-sm font-bold text-green-600">
+              <div className="text-xs font-medium text-gray-500 mb-1">Total Deposits</div>
+              <div className="text-sm font-bold text-emerald-600 tabular-nums">
                 {formatSTX(
                   transactions
                     .filter(tx => tx.type === 'deposit' && tx.status === 'confirmed')
@@ -369,8 +369,8 @@ export const TransactionHistory: React.FC = () => {
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-gray-500 mb-1">Total Withdrawn</div>
-              <div className="text-sm font-bold text-blue-600">
+              <div className="text-xs font-medium text-gray-500 mb-1">Total Withdrawn</div>
+              <div className="text-sm font-bold text-blue-600 tabular-nums">
                 {formatSTX(
                   transactions
                     .filter(tx => tx.type === 'withdraw' && tx.status === 'confirmed')
@@ -379,8 +379,8 @@ export const TransactionHistory: React.FC = () => {
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-gray-500 mb-1">Total Borrowed</div>
-              <div className="text-sm font-bold text-purple-600">
+              <div className="text-xs font-medium text-gray-500 mb-1">Total Borrowed</div>
+              <div className="text-sm font-bold text-purple-600 tabular-nums">
                 {formatSTX(
                   transactions
                     .filter(tx => tx.type === 'borrow' && tx.status === 'confirmed')
@@ -389,8 +389,8 @@ export const TransactionHistory: React.FC = () => {
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-gray-500 mb-1">Total Repaid</div>
-              <div className="text-sm font-bold text-orange-600">
+              <div className="text-xs font-medium text-gray-500 mb-1">Total Repaid</div>
+              <div className="text-sm font-bold text-orange-600 tabular-nums">
                 {formatSTX(
                   transactions
                     .filter(tx => tx.type === 'repay' && tx.status === 'confirmed')

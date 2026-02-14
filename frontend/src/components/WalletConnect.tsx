@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 
 /**
  * WalletConnect Component
- * Displays wallet connection button and user information
+ * Polished wallet connection button and user information display
  */
 export const WalletConnect: React.FC = () => {
   const { 
@@ -24,7 +24,6 @@ export const WalletConnect: React.FC = () => {
     try {
       console.log('Manual balance refresh initiated');
       await refreshBalance();
-      // Wait a bit longer to ensure balance updates
       await new Promise(resolve => setTimeout(resolve, 1500));
     } catch (error) {
       console.error('Error during manual refresh:', error);
@@ -33,12 +32,10 @@ export const WalletConnect: React.FC = () => {
     }
   };
 
-  // Format address for display
   const formatAddress = (addr: string): string => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
-  // Format STX balance
   const formatBalance = (balance: number): string => {
     return balance.toLocaleString('en-US', {
       minimumFractionDigits: 2,
@@ -48,8 +45,8 @@ export const WalletConnect: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
-        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
+      <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-xl">
+        <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
         <span className="text-sm text-gray-600">Loading...</span>
       </div>
     );
@@ -59,41 +56,41 @@ export const WalletConnect: React.FC = () => {
     return (
       <button
         onClick={connectWallet}
-        className="flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-md hover:shadow-lg"
+        className="btn btn-primary text-sm"
       >
-        <Wallet size={20} />
-        <span className="font-medium">Connect Wallet</span>
+        <Wallet size={18} />
+        <span>Connect Wallet</span>
       </button>
     );
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2">
       {/* Balance Display */}
-      <div className="px-4 py-2 bg-gray-100 rounded-lg flex items-center gap-2">
+      <div className="px-3 py-1.5 bg-gray-100/80 rounded-xl flex items-center gap-2 border border-gray-200/60">
         <div>
-          <div className="text-xs text-gray-500">Balance</div>
-          <div className="text-sm font-semibold text-gray-900">
+          <div className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Balance</div>
+          <div className="text-sm font-bold text-gray-900 tabular-nums">
             {formatBalance(balanceSTX)} STX
           </div>
         </div>
         <button
           onClick={handleRefresh}
-          className="p-1 hover:bg-gray-200 rounded transition-colors"
+          className="p-1.5 hover:bg-gray-200/80 rounded-lg transition-colors"
           title="Refresh Balance"
           disabled={isRefreshing}
         >
           <RefreshCw 
-            size={16} 
-            className={`text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`}
+            size={14} 
+            className={`text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`}
           />
         </button>
       </div>
 
       {/* Address Display */}
-      <div className="px-4 py-2 bg-primary-50 rounded-lg">
-        <div className="text-xs text-primary-600">Connected</div>
-        <div className="text-sm font-mono font-semibold text-primary-900">
+      <div className="px-3 py-1.5 bg-primary-50/80 rounded-xl border border-primary-100">
+        <div className="text-[10px] text-primary-500 font-medium uppercase tracking-wider">Connected</div>
+        <div className="text-sm font-mono font-bold text-primary-900">
           {address && formatAddress(address)}
         </div>
       </div>
@@ -101,11 +98,11 @@ export const WalletConnect: React.FC = () => {
       {/* Disconnect Button */}
       <button
         onClick={disconnectWallet}
-        className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors border border-red-100"
         title="Disconnect Wallet"
       >
-        <LogOut size={18} />
-        <span className="text-sm font-medium">Disconnect</span>
+        <LogOut size={16} />
+        <span className="text-sm font-semibold">Disconnect</span>
       </button>
     </div>
   );

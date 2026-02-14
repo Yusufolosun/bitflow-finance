@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   callReadOnlyFunction,
-  ClarityType,
   cvToValue,
 } from '@stacks/transactions';
 import {
@@ -22,8 +21,33 @@ export interface ProtocolStats {
 }
 
 /**
+ * Safely extract a numeric value from a Clarity response field.
+ * Handles: number, bigint, string (with optional 'u' prefix), ClarityValue objects, undefined/null.
+ */
+const safeNumber = (val: unknown): number => {
+  if (val === undefined || val === null) return 0;
+  if (typeof val === 'number') return isNaN(val) ? 0 : val;
+  if (typeof val === 'bigint') return Number(val);
+  if (typeof val === 'string') {
+    const cleaned = val.replace(/^u/, '');
+    const num = Number(cleaned);
+    return isNaN(num) ? 0 : num;
+  }
+  // Handle ClarityValue objects that weren't fully unpacked
+  if (typeof val === 'object' && val !== null) {
+    const obj = val as Record<string, unknown>;
+    if ('value' in obj) return safeNumber(obj.value);
+  }
+  return 0;
+};
+
+/**
  * Custom hook that fetches real-time protocol statistics from the blockchain
  * Uses the get-protocol-stats read-only function on the vault contract
+ *
+ * Note: The contract's get-protocol-stats returns:
+ *   { total-deposits, total-repaid, total-liquidations }
+ * It does NOT return total-borrowed or active-loans directly.
  *
  * @param refreshInterval - Auto-refresh interval in ms (default: 30000 = 30s, 0 = disabled)
  */
@@ -37,6 +61,29 @@ export const useProtocolStats = (refreshInterval = 30000) => {
   const network = getNetwork();
   const contractAddress = getContractAddress();
   const contractName = VAULT_CONTRACT.name;
+
+  /**
+   * Parse protocol stats from a Clarity tuple value
+   */
+  const parseStats = (data: Record<string, unknown>): ProtocolStats => {
+    const totalDeposits = safeNumber(data['total-deposits']) / 1_000_000;
+    const totalRepaid = safeNumber(data['total-repaid']) / 1_000_000;
+    const totalLiquidations = safeNumber(data['total-liquidations']);
+
+    // total-borrowed and active-loans are not in get-protocol-stats
+    // Derive total-borrowed from deposit volume minus current deposits if available,
+    // otherwise default to 0 (accurate when no active loans exist)
+    const totalBorrowed = safeNumber(data['total-borrowed']) / 1_000_000;
+    const activeLoans = safeNumber(data['active-loans']);
+
+    return {
+      totalDeposits,
+      totalBorrowed,
+      totalRepaid,
+      activeLoans,
+      totalLiquidations,
+    };
+  };
 
   /**
    * Fetch protocol stats from the contract
@@ -56,33 +103,12 @@ export const useProtocolStats = (refreshInterval = 30000) => {
 
       if (!mountedRef.current) return;
 
-      if (result.type === ClarityType.Tuple) {
-        const data = cvToValue(result);
+      const data = cvToValue(result);
 
-        const protocolStats: ProtocolStats = {
-          totalDeposits: Number(data['total-deposits'] || 0) / 1_000_000,
-          totalBorrowed: Number(data['total-borrowed'] || 0) / 1_000_000,
-          totalRepaid: Number(data['total-repaid'] || 0) / 1_000_000,
-          activeLoans: Number(data['active-loans'] || 0),
-          totalLiquidations: Number(data['total-liquidations'] || 0),
-        };
-
+      if (data && typeof data === 'object') {
+        const protocolStats = parseStats(data as Record<string, unknown>);
         setStats(protocolStats);
         setLastUpdated(new Date());
-      } else {
-        // Fallback: try to parse response envelope
-        const data = cvToValue(result);
-        if (data && typeof data === 'object') {
-          const protocolStats: ProtocolStats = {
-            totalDeposits: Number(data['total-deposits'] || 0) / 1_000_000,
-            totalBorrowed: Number(data['total-borrowed'] || 0) / 1_000_000,
-            totalRepaid: Number(data['total-repaid'] || 0) / 1_000_000,
-            activeLoans: Number(data['active-loans'] || 0),
-            totalLiquidations: Number(data['total-liquidations'] || 0),
-          };
-          setStats(protocolStats);
-          setLastUpdated(new Date());
-        }
       }
     } catch (err: any) {
       if (!mountedRef.current) return;

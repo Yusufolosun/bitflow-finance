@@ -130,18 +130,18 @@ export const BorrowCard: React.FC = () => {
   // If user has active loan, show message
   if (activeLoan) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="card-elevated">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-yellow-100 rounded-lg">
-            <AlertCircle className="text-yellow-600" size={24} />
+          <div className="p-3 bg-amber-50 rounded-xl">
+            <AlertCircle className="text-amber-600" size={22} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900">Active Loan</h3>
+            <h3 className="text-lg font-bold text-gray-900 tracking-tight">Active Loan</h3>
             <p className="text-sm text-gray-500">You already have an active loan</p>
           </div>
         </div>
 
-        <div className="bg-yellow-50 rounded-lg p-4 space-y-2">
+        <div className="bg-amber-50/80 rounded-xl p-4 space-y-2 border border-amber-100">
           <div className="flex justify-between">
             <span className="text-sm text-gray-600">Loan Amount:</span>
             <span className="text-sm font-semibold">{formatSTX(activeLoan.amountSTX)} STX</span>
@@ -164,22 +164,22 @@ export const BorrowCard: React.FC = () => {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
+    <div className="card-elevated space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="p-3 bg-green-100 rounded-lg">
-          <TrendingUp className="text-green-600" size={24} />
+        <div className="p-3 bg-emerald-50 rounded-xl">
+          <TrendingUp className="text-emerald-600" size={22} />
         </div>
         <div>
-          <h3 className="text-xl font-bold text-gray-900">Borrow STX</h3>
+          <h3 className="text-lg font-bold text-gray-900 tracking-tight">Borrow STX</h3>
           <p className="text-sm text-gray-500">Borrow against your collateral</p>
         </div>
       </div>
 
       {/* Available Collateral */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <div className="text-xs text-gray-500 mb-1">Available Collateral</div>
-        <div className="text-2xl font-bold text-gray-900">
+      <div className="bg-gray-50/80 rounded-xl p-4 border border-gray-100">
+        <div className="text-xs font-medium text-gray-500 mb-1">Available Collateral</div>
+        <div className="text-2xl font-bold text-gray-900 tracking-tight">
           {formatSTX(userDeposit)} STX
         </div>
         <div className="text-xs text-gray-500 mt-1">
@@ -198,12 +198,12 @@ export const BorrowCard: React.FC = () => {
             value={borrowAmount}
             onChange={(e) => setBorrowAmount(e.target.value)}
             placeholder="0.00"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="input"
             disabled={txStatus === 'pending'}
           />
           <button
             onClick={handleMaxClick}
-            className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1 bg-green-100 text-green-600 rounded text-sm font-medium hover:bg-green-200 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-colors border border-emerald-200"
             disabled={txStatus === 'pending'}
           >
             MAX
@@ -243,9 +243,9 @@ export const BorrowCard: React.FC = () => {
             <button
               key={term.days}
               onClick={() => setLoanTerm(term.days)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
                 loanTerm === term.days
-                  ? 'bg-green-600 text-white'
+                  ? 'bg-emerald-600 text-white shadow-sm'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
               disabled={txStatus === 'pending'}
@@ -302,7 +302,7 @@ export const BorrowCard: React.FC = () => {
 
       {/* Collateral Sufficiency Warning */}
       {borrowAmount && requiredCollateral > userDeposit && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
+        <div className="flex items-center gap-2 p-3 bg-red-50 rounded-xl border border-red-100">
           <AlertCircle className="text-red-600 flex-shrink-0" size={16} />
           <span className="text-xs text-red-700">
             Need {formatSTX(requiredCollateral - userDeposit)} more STX deposited as collateral
@@ -314,7 +314,7 @@ export const BorrowCard: React.FC = () => {
       <button
         onClick={handleBorrow}
         disabled={!address || txStatus === 'pending' || !borrowAmount || userDeposit === 0}
-        className="w-full py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+        className="w-full btn btn-success py-3 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {txStatus === 'pending' && (
           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -324,21 +324,21 @@ export const BorrowCard: React.FC = () => {
 
       {/* Status Messages */}
       {txStatus === 'success' && (
-        <div className="p-3 bg-green-50 rounded-lg space-y-2">
+        <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 space-y-2">
           <div className="flex items-center gap-2">
-            <CheckCircle className="text-green-600" size={20} />
-            <span className="text-sm text-green-700 font-medium">
+            <CheckCircle className="text-emerald-600" size={20} />
+            <span className="text-sm text-emerald-700 font-medium">
               Loan created successfully! STX received.
             </span>
           </div>
-          <p className="text-xs text-green-600">
+          <p className="text-xs text-emerald-600">
             Tip: Click "Refresh Data" on the Dashboard to update your portfolio view.
           </p>
         </div>
       )}
 
       {txStatus === 'error' && errorMessage && (
-        <div className="p-3 bg-red-50 rounded-lg space-y-2">
+        <div className="p-3 bg-red-50 rounded-xl border border-red-100 space-y-2">
           <div className="flex items-center gap-2">
             <XCircle className="text-red-600" size={20} />
             <span className="text-sm text-red-700 font-medium">{errorMessage}</span>
