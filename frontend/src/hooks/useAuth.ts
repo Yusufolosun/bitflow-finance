@@ -58,10 +58,25 @@ export const useAuth = () => {
   }, []);
 
   /**
+   * Safely check if user is signed in
+   * Handles corrupt/stale session data from older @stacks/connect versions
+   */
+  const isSignedIn = useCallback((): boolean => {
+    try {
+      return userSession.isUserSignedIn();
+    } catch (error) {
+      console.warn('Corrupt session data detected, clearing localStorage:', error);
+      // Clear stale session data that can't be parsed by current library version
+      localStorage.removeItem('blockstack-session');
+      return false;
+    }
+  }, [userSession]);
+
+  /**
    * Update wallet state with current user data
    */
   const updateWalletState = useCallback(async () => {
-    if (userSession.isUserSignedIn()) {
+    if (isSignedIn()) {
       const userData = userSession.loadUserData();
       const address = userData.profile.stxAddress[ACTIVE_NETWORK];
       const balance = await fetchBalance(address);
@@ -92,7 +107,7 @@ export const useAuth = () => {
       });
     }
     setIsLoading(false);
-  }, [userSession, fetchBalance]);
+  }, [userSession, fetchBalance, isSignedIn]);
 
   /**
    * Connect wallet using Stacks Connect
@@ -154,7 +169,7 @@ export const useAuth = () => {
   // Check if user is already signed in on mount
   useEffect(() => {
     const initializeAuth = async () => {
-      if (userSession.isUserSignedIn()) {
+      if (isSignedIn()) {
         const userData = userSession.loadUserData();
         const address = userData.profile.stxAddress[ACTIVE_NETWORK];
         
@@ -174,7 +189,7 @@ export const useAuth = () => {
     };
     
     initializeAuth();
-  }, [userSession, fetchBalance]);
+  }, [userSession, fetchBalance, isSignedIn]);
 
   // Auto-refresh disabled to prevent rate limiting
   // Users can manually refresh using the refresh button
