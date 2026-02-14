@@ -3,9 +3,8 @@
  * Task 3.5 - Connection flow, address display, balance display, disconnect
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { WalletConnect } from '../WalletConnect';
 
 // Mock hooks

@@ -65,7 +65,6 @@ describe("Time-Based Functionality Tests", () => {
       const wallet = accounts.get("wallet_1")!;
 
       simnet.callPublicFn(CONTRACT, "deposit", [Cl.uint(1500)], wallet);
-      const startBlock = simnet.blockHeight;
       simnet.callPublicFn(CONTRACT, "borrow", [Cl.uint(1000), Cl.uint(500), Cl.uint(1)], wallet);
 
       // Term = 1 day = 144 blocks. Mine past it.

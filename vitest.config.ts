@@ -26,6 +26,8 @@ export default defineConfig({
     // clarinet handles test isolation by resetting the simnet between tests
     isolate: false,
     singleThread: true,
+    // only run contract tests; frontend tests have their own vitest config
+    include: ["tests/**/*.{test,spec}.{ts,tsx}"],
     setupFiles: [
       vitestSetupFilePath,
       // custom setup files can be added here

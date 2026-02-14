@@ -3,9 +3,8 @@
  * Task 3.4 - Repayment display, balance validation, loan progress, status messages
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { RepayCard } from '../RepayCard';
 
 // Mock hooks

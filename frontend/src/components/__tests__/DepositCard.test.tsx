@@ -3,9 +3,8 @@
  * Task 3.2 - Input validation, max button, submit states, status messages
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { DepositCard } from '../DepositCard';
 
 // Mock hooks

@@ -307,7 +307,7 @@ describe("Precision Tests", () => {
       simnet.mineEmptyBlocks(100);
       simnet.callPublicFn(CONTRACT, "repay", [], wallet1);
 
-      const repaid1 = simnet.callReadOnlyFn(CONTRACT, "get-total-repaid", [], wallet1);
+      simnet.callReadOnlyFn(CONTRACT, "get-total-repaid", [], wallet1);
 
       // User 2 borrows and repays
       simnet.callPublicFn(CONTRACT, "deposit", [Cl.uint(1500)], wallet2);
