@@ -11,7 +11,8 @@ export const NETWORK_CONFIG = {
 };
 
 // Toggle between 'testnet' and 'mainnet'
-export const ACTIVE_NETWORK: 'testnet' | 'mainnet' = 'mainnet';
+// Using type assertion to preserve union type for runtime comparisons
+export const ACTIVE_NETWORK = 'mainnet' as 'testnet' | 'mainnet';
 
 // Get the active network instance
 export const getNetwork = () => NETWORK_CONFIG[ACTIVE_NETWORK];

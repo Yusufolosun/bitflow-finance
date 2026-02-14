@@ -7,10 +7,8 @@ import {
   ClarityType,
   cvToValue,
   PostConditionMode,
-  Pc,
   FungibleConditionCode,
   makeStandardSTXPostCondition,
-  makeContractSTXPostCondition,
 } from '@stacks/transactions';
 import { 
   UserDeposit, 
@@ -328,7 +326,7 @@ export const useVault = (_userSession: UserSession, userAddress: string | null) 
         senderAddress: userAddress,
       });
 
-      console.log('getUserLoan raw result:', JSON.stringify(result, (key, value) => 
+      console.log('getUserLoan raw result:', JSON.stringify(result, (_key, value) => 
         typeof value === 'bigint' ? value.toString() : value, 2
       ));
       console.log('Result type:', result.type);

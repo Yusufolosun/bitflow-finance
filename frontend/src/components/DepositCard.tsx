@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ArrowDownCircle, CheckCircle, XCircle, ExternalLink, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useVault } from '../hooks/useVault';
-import { formatSTX, PROTOCOL_CONSTANTS } from '../types/vault';
+import { formatSTX } from '../types/vault';
+import { PROTOCOL_CONSTANTS } from '../config/contracts';
 import { getExplorerUrl } from '../config/contracts';
 
 /**

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { TrendingUp, DollarSign, Activity, Users } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useVault } from '../hooks/useVault';
@@ -21,7 +21,7 @@ import { ErrorState } from './ErrorState';
  * Main dashboard layout with protocol stats and user portfolio
  */
 export const Dashboard: React.FC = () => {
-  const { address, balance, userSession } = useAuth();
+  const { address, balanceSTX, userSession } = useAuth();
   const vault = useVault(userSession, address);
   const { stats: protocolStats, isLoading: statsLoading, error: statsError, lastUpdated: statsLastUpdated, refresh: refreshStats } = useProtocolStats(30000);
 
@@ -335,7 +335,7 @@ export const Dashboard: React.FC = () => {
               <div>
                 <div className="text-sm opacity-90 mb-1">Your Wallet Balance</div>
                 <div className="text-2xl font-bold">
-                  {address ? formatSTX(balance) : '0.00'} STX
+                  {address ? formatSTX(balanceSTX) : '0.00'} STX
                 </div>
               </div>
               <div>
