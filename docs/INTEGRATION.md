@@ -1479,6 +1479,262 @@ export const BitFlowDashboard: React.FC = () => {
 
 ---
 
+## Vue.js Integration
+
+Integrate BitFlow Finance using Vue 3 Composition API.
+
+### Setup
+
+```bash
+npm install @stacks/connect @stacks/transactions @stacks/network vue
+```
+
+### Composable: useWallet
+
+```typescript
+// composables/useWallet.ts
+import { ref, onMounted } from 'vue';
+import { showConnect, UserSession, AppConfig } from '@stacks/connect';
+
+const appConfig = new AppConfig(['store_write']);
+const userSession = new UserSession({ appConfig });
+
+export function useWallet() {
+  const isConnected = ref(false);
+  const address = ref<string | null>(null);
+
+  onMounted(() => {
+    if (userSession.isUserSignedIn()) {
+      const userData = userSession.loadUserData();
+      isConnected.value = true;
+      address.value = userData.profile.stxAddress.mainnet;
+    }
+  });
+
+  function connect() {
+    showConnect({
+      appDetails: { name: 'BitFlow Finance', icon: '/logo.png' },
+      onFinish: () => {
+        const userData = userSession.loadUserData();
+        isConnected.value = true;
+        address.value = userData.profile.stxAddress.mainnet;
+      },
+      userSession,
+    });
+  }
+
+  function disconnect() {
+    userSession.signUserOut();
+    isConnected.value = false;
+    address.value = null;
+  }
+
+  return { isConnected, address, connect, disconnect };
+}
+```
+
+### Composable: useVault
+
+```typescript
+// composables/useVault.ts
+import { ref } from 'vue';
+import { openContractCall } from '@stacks/connect';
+import { callReadOnlyFunction, uintCV, principalCV, cvToValue } from '@stacks/transactions';
+
+const CONTRACT = {
+  address: 'SP1M46W6CVGAMH3ZJD3TKMY5KCY48HWAZK0DYG193',
+  name: 'bitflow-vault-core',
+};
+
+export function useVault(userAddress: () => string | null) {
+  const loading = ref(false);
+  const deposit = ref(0);
+
+  async function fetchDeposit() {
+    const addr = userAddress();
+    if (!addr) return;
+    const result = await callReadOnlyFunction({
+      ...CONTRACT, contractAddress: CONTRACT.address, contractName: CONTRACT.name,
+      functionName: 'get-user-deposit',
+      functionArgs: [principalCV(addr)],
+      senderAddress: addr,
+      network: 'mainnet',
+    });
+    deposit.value = Number(cvToValue(result)) / 1_000_000;
+  }
+
+  async function makeDeposit(amountSTX: number) {
+    loading.value = true;
+    try {
+      await openContractCall({
+        contractAddress: CONTRACT.address,
+        contractName: CONTRACT.name,
+        functionName: 'deposit',
+        functionArgs: [uintCV(Math.floor(amountSTX * 1_000_000))],
+        network: 'mainnet',
+      });
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  return { loading, deposit, fetchDeposit, makeDeposit };
+}
+```
+
+### Vue Component
+
+```vue
+<!-- components/BitFlowDashboard.vue -->
+<template>
+  <div class="p-8">
+    <div v-if="!wallet.isConnected.value" class="text-center">
+      <h1>BitFlow Finance</h1>
+      <button @click="wallet.connect">Connect Wallet</button>
+    </div>
+    <div v-else>
+      <p>Connected: {{ wallet.address.value }}</p>
+      <p>Deposit: {{ vault.deposit.value.toFixed(6) }} STX</p>
+      <input v-model="amount" type="number" placeholder="STX amount" />
+      <button @click="vault.makeDeposit(parseFloat(amount))" :disabled="vault.loading.value">
+        {{ vault.loading.value ? 'Processing...' : 'Deposit' }}
+      </button>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, watch } from 'vue';
+import { useWallet } from '../composables/useWallet';
+import { useVault } from '../composables/useVault';
+
+const wallet = useWallet();
+const vault = useVault(() => wallet.address.value);
+const amount = ref('');
+
+watch(() => wallet.isConnected.value, (connected) => {
+  if (connected) vault.fetchDeposit();
+});
+</script>
+```
+
+---
+
+## Vanilla JavaScript
+
+Integrate BitFlow without any framework — pure JavaScript.
+
+### HTML Setup
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BitFlow Finance</title>
+  <script src="https://unpkg.com/@stacks/connect@7.4.0/dist/umd/index.js"></script>
+  <script src="https://unpkg.com/@stacks/transactions@6.13.0/dist/umd/index.js"></script>
+</head>
+<body>
+  <div id="app">
+    <h1>BitFlow Finance</h1>
+    <div id="wallet-section">
+      <button id="connect-btn">Connect Wallet</button>
+    </div>
+    <div id="dashboard" style="display: none;">
+      <p>Address: <span id="user-address"></span></p>
+      <p>Deposit: <span id="user-deposit">0</span> STX</p>
+      <input id="deposit-amount" type="number" placeholder="STX amount" />
+      <button id="deposit-btn">Deposit</button>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
+```
+
+### JavaScript Logic
+
+```javascript
+// app.js
+const CONTRACT_ADDRESS = 'SP1M46W6CVGAMH3ZJD3TKMY5KCY48HWAZK0DYG193';
+const CONTRACT_NAME = 'bitflow-vault-core';
+const MICRO_STX = 1000000;
+
+const { showConnect, UserSession, AppConfig } = window.StacksConnect;
+const { callReadOnlyFunction, uintCV, principalCV, cvToValue, openContractCall } = window.StacksTransactions;
+
+const appConfig = new AppConfig(['store_write']);
+const userSession = new UserSession({ appConfig });
+
+let currentAddress = null;
+
+// Connect wallet
+document.getElementById('connect-btn').addEventListener('click', () => {
+  showConnect({
+    appDetails: { name: 'BitFlow Finance', icon: '/logo.png' },
+    onFinish: () => {
+      const userData = userSession.loadUserData();
+      currentAddress = userData.profile.stxAddress.mainnet;
+      showDashboard();
+    },
+    userSession,
+  });
+});
+
+// Show dashboard after connection
+async function showDashboard() {
+  document.getElementById('wallet-section').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('user-address').textContent = currentAddress;
+  await refreshDeposit();
+}
+
+// Fetch deposit balance
+async function refreshDeposit() {
+  const result = await callReadOnlyFunction({
+    contractAddress: CONTRACT_ADDRESS,
+    contractName: CONTRACT_NAME,
+    functionName: 'get-user-deposit',
+    functionArgs: [principalCV(currentAddress)],
+    senderAddress: currentAddress,
+    network: 'mainnet',
+  });
+  const deposit = Number(cvToValue(result)) / MICRO_STX;
+  document.getElementById('user-deposit').textContent = deposit.toFixed(6);
+}
+
+// Deposit STX
+document.getElementById('deposit-btn').addEventListener('click', async () => {
+  const amount = parseFloat(document.getElementById('deposit-amount').value);
+  if (isNaN(amount) || amount <= 0) {
+    alert('Please enter a valid amount');
+    return;
+  }
+  
+  await openContractCall({
+    contractAddress: CONTRACT_ADDRESS,
+    contractName: CONTRACT_NAME,
+    functionName: 'deposit',
+    functionArgs: [uintCV(Math.floor(amount * MICRO_STX))],
+    network: 'mainnet',
+    onFinish: (data) => {
+      console.log('Transaction:', data.txId);
+      setTimeout(refreshDeposit, 15000); // Refresh after ~1 block
+    },
+  });
+});
+
+// Auto-connect if already signed in
+if (userSession.isUserSignedIn()) {
+  const userData = userSession.loadUserData();
+  currentAddress = userData.profile.stxAddress.mainnet;
+  showDashboard();
+}
+```
+
+---
+
 ## Support
 
 For integration support:
