@@ -1,0 +1,218 @@
+import { Cl } from "@stacks/transactions";
+import { describe, expect, it } from "vitest";
+
+const CONTRACT = "bitflow-vault-core";
+
+describe("Precision Tests", () => {
+  // ===== TASK 1.4: Calculation Precision Tests =====
+
+  describe("interest calculation precision", () => {
+    it("calculates zero interest for very small principal over short time", () => {
+      const accounts = simnet.getAccounts();
+      const wallet = accounts.get("wallet_1")!;
+
+      // Deposit 150 (enough for 150% collateral on 100)
+      simnet.callPublicFn(CONTRACT, "deposit", [Cl.uint(150)], wallet);
+      simnet.callPublicFn(CONTRACT, "borrow", [Cl.uint(100), Cl.uint(100), Cl.uint(1)], wallet);
+
+      // 1 block elapsed: interest = (100 * 100 * 1) / (100 * 52560) = 0 (integer)
+      const repayment = simnet.callReadOnlyFn(
+        CONTRACT, "get-repayment-amount",
+        [Cl.principal(wallet)], wallet
+      );
+      expect(repayment.result).toBeSome(
+        Cl.tuple({ principal: Cl.uint(100), interest: Cl.uint(0), total: Cl.uint(100) })
+      );
+    });
+
+    it("calculates correct interest for large principal over long time", () => {
+      const accounts = simnet.getAccounts();
+      const wallet = accounts.get("wallet_1")!;
+
+      // Large deposit and borrow
+      const depositAmount = 15_000_000; // 15M microSTX
+      const borrowAmount = 10_000_000;  // 10M microSTX
+      const rate = 500; // 5% APR in BPS
+
+      simnet.callPublicFn(CONTRACT, "deposit", [Cl.uint(depositAmount)], wallet);
+      simnet.callPublicFn(CONTRACT, "borrow", [Cl.uint(borrowAmount), Cl.uint(rate), Cl.uint(365)], wallet);
+
+      // Mine 1 year of blocks (52560)
+      simnet.mineEmptyBlocks(52560);
+
+      // Interest = (10_000_000 * 500 * 52560) / (100 * 52560) = 10_000_000 * 500 / 100 = 50_000_000
+      const repayment = simnet.callReadOnlyFn(
+        CONTRACT, "get-repayment-amount",
+        [Cl.principal(wallet)], wallet
+      );
+      expect(repayment.result).toBeSome(
+        Cl.tuple({
+          principal: Cl.uint(borrowAmount),
+          interest: Cl.uint(50_000_000),
+          total: Cl.uint(60_000_000),
+        })
+      );
+    });
+
+    it("accumulates interest proportionally to blocks elapsed", () => {
+      const accounts = simnet.getAccounts();
+      const wallet = accounts.get("wallet_1")!;
+
+      simnet.callPublicFn(CONTRACT, "deposit", [Cl.uint(1_500_000)], wallet);
+      simnet.callPublicFn(CONTRACT, "borrow", [Cl.uint(1_000_000), Cl.uint(1000), Cl.uint(365)], wallet);
+
+      // After 5256 blocks (1/10 year): interest = (1_000_000 * 1000 * 5256) / (100 * 52560)
+      // = 5_256_000_000_000 / 5_256_000 = 1_000_000
+      simnet.mineEmptyBlocks(5256);
+
+      const repayment = simnet.callReadOnlyFn(
+        CONTRACT, "get-repayment-amount",
+        [Cl.principal(wallet)], wallet
+      );
+      expect(repayment.result).toBeSome(
+        Cl.tuple({
+          principal: Cl.uint(1_000_000),
+          interest: Cl.uint(1_000_000),
+          total: Cl.uint(2_000_000),
+        })
+      );
+    });
+
+    it("calculates interest correctly with minimum rate over many blocks", () => {
+      const accounts = simnet.getAccounts();
+      const wallet = accounts.get("wallet_1")!;
+
+      simnet.callPublicFn(CONTRACT, "deposit", [Cl.uint(150_000)], wallet);
+      simnet.callPublicFn(CONTRACT, "borrow", [Cl.uint(100_000), Cl.uint(1), Cl.uint(365)], wallet);
+
+      // Mine full year: interest = (100_000 * 1 * 52560) / (100 * 52560) = 1000
+      simnet.mineEmptyBlocks(52560);
+
+      const repayment = simnet.callReadOnlyFn(
+        CONTRACT, "get-repayment-amount",
+        [Cl.principal(wallet)], wallet
+      );
+      expect(repayment.result).toBeSome(
+        Cl.tuple({
+          principal: Cl.uint(100_000),
+          interest: Cl.uint(1000),
+          total: Cl.uint(101_000),
+        })
+      );
+    });
+  });
+
+  describe("health factor calculation precision", () => {
+    it("calculates health factor precisely at 150%", () => {
+      const accounts = simnet.getAccounts();
+      const wallet = accounts.get("wallet_1")!;
+
+      simnet.callPublicFn(CONTRACT, "deposit", [Cl.uint(1500)], wallet);
+      simnet.callPublicFn(CONTRACT, "borrow", [Cl.uint(1000), Cl.uint(500), Cl.uint(30)], wallet);
+
+      // With price = 100: health = (1500 * 100 / 100) * 100 / 1000 = 150
+      const health = simnet.callReadOnlyFn(
+        CONTRACT, "calculate-health-factor",
+        [Cl.principal(wallet), Cl.uint(100)], wallet
+      );
+      expect(health.result).toBeSome(Cl.uint(150));
+    });
+
+    it("calculates health factor precisely at 200%", () => {
+      const accounts = simnet.getAccounts();
+      const wallet = accounts.get("wallet_1")!;
+
+      simnet.callPublicFn(CONTRACT, "deposit", [Cl.uint(2000)], wallet);
+      simnet.callPublicFn(CONTRACT, "borrow", [Cl.uint(1000), Cl.uint(500), Cl.uint(30)], wallet);
+
+      const health = simnet.callReadOnlyFn(
+        CONTRACT, "calculate-health-factor",
+        [Cl.principal(wallet), Cl.uint(100)], wallet
+      );
+      expect(health.result).toBeSome(Cl.uint(200));
+    });
+
+    it("health factor drops with lower STX price", () => {
+      const accounts = simnet.getAccounts();
+      const wallet = accounts.get("wallet_1")!;
+
+      simnet.callPublicFn(CONTRACT, "deposit", [Cl.uint(2000)], wallet);
+      simnet.callPublicFn(CONTRACT, "borrow", [Cl.uint(1000), Cl.uint(500), Cl.uint(30)], wallet);
+
+      // At price 50: health = (2000 * 50 / 100) * 100 / 1000 = 100
+      const health = simnet.callReadOnlyFn(
+        CONTRACT, "calculate-health-factor",
+        [Cl.principal(wallet), Cl.uint(50)], wallet
+      );
+      expect(health.result).toBeSome(Cl.uint(100));
+    });
+
+    it("health factor returns none for users without loans", () => {
+      const accounts = simnet.getAccounts();
+      const wallet = accounts.get("wallet_1")!;
+
+      simnet.callPublicFn(CONTRACT, "deposit", [Cl.uint(1500)], wallet);
+
+      const health = simnet.callReadOnlyFn(
+        CONTRACT, "calculate-health-factor",
+        [Cl.principal(wallet), Cl.uint(100)], wallet
+      );
+      expect(health.result).toBeNone();
+    });
+  });
+
+  describe("collateral ratio precision", () => {
+    it("calculates required collateral correctly for various amounts", () => {
+      const accounts = simnet.getAccounts();
+      const wallet = accounts.get("wallet_1")!;
+
+      // Test: 150% of 1 = 1 (integer division: 1*150/100=1)
+      const c1 = simnet.callReadOnlyFn(CONTRACT, "calculate-required-collateral", [Cl.uint(1)], wallet);
+      expect(c1.result).toBeUint(1);
+
+      // Test: 150% of 2 = 3
+      const c2 = simnet.callReadOnlyFn(CONTRACT, "calculate-required-collateral", [Cl.uint(2)], wallet);
+      expect(c2.result).toBeUint(3);
+
+      // Test: 150% of 3 = 4 (integer division: 3*150/100=4)
+      const c3 = simnet.callReadOnlyFn(CONTRACT, "calculate-required-collateral", [Cl.uint(3)], wallet);
+      expect(c3.result).toBeUint(4);
+
+      // Test: 150% of 333 = 499 (integer division: 333*150/100=499)
+      const c4 = simnet.callReadOnlyFn(CONTRACT, "calculate-required-collateral", [Cl.uint(333)], wallet);
+      expect(c4.result).toBeUint(499);
+
+      // Test: 150% of 1000000 = 1500000
+      const c5 = simnet.callReadOnlyFn(CONTRACT, "calculate-required-collateral", [Cl.uint(1_000_000)], wallet);
+      expect(c5.result).toBeUint(1_500_000);
+    });
+
+    it("max borrow amount is correctly derived from deposit", () => {
+      const accounts = simnet.getAccounts();
+      const wallet = accounts.get("wallet_1")!;
+
+      simnet.callPublicFn(CONTRACT, "deposit", [Cl.uint(1500)], wallet);
+
+      // max_borrow = deposit * 100 / 150 = 1500 * 100 / 150 = 1000
+      const maxBorrow = simnet.callReadOnlyFn(
+        CONTRACT, "get-max-borrow-amount",
+        [Cl.principal(wallet)], wallet
+      );
+      expect(maxBorrow.result).toBeUint(1000);
+    });
+
+    it("max borrow amount handles non-divisible amounts correctly", () => {
+      const accounts = simnet.getAccounts();
+      const wallet = accounts.get("wallet_1")!;
+
+      simnet.callPublicFn(CONTRACT, "deposit", [Cl.uint(1000)], wallet);
+
+      // max_borrow = 1000 * 100 / 150 = 666 (integer division)
+      const maxBorrow = simnet.callReadOnlyFn(
+        CONTRACT, "get-max-borrow-amount",
+        [Cl.principal(wallet)], wallet
+      );
+      expect(maxBorrow.result).toBeUint(666);
+    });
+  });
+});
