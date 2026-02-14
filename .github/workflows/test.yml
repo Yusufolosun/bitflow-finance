@@ -2,72 +2,115 @@ name: Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   contract-tests:
     name: Contract Tests
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 15
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      
+
+      - name: Cache Clarinet SDK
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.clarinet
+            node_modules/.cache
+          key: clarinet-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: clarinet-${{ runner.os }}-
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run contract tests
-        run: npm test
-      
+        run: npm test -- --reporter=verbose 2>&1 | tee contract-test-output.txt
+
+      - name: Annotate test results
+        if: always()
+        run: |
+          PASSED=$(grep -oP 'Tests\s+\K\d+(?=\s+passed)' contract-test-output.txt || echo "0")
+          FAILED=$(grep -oP '\d+(?=\s+failed)' contract-test-output.txt || echo "0")
+          FILES=$(grep -oP 'Test Files\s+\K\d+(?=\s+passed)' contract-test-output.txt || echo "0")
+          echo "## 🧪 Contract Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Files | $FILES |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests Failed | $FAILED |" >> $GITHUB_STEP_SUMMARY
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: contract-test-results
-          path: |
-            .clarinet
-            coverage/
+          path: contract-test-output.txt
           if-no-files-found: ignore
 
   frontend-tests:
     name: Frontend Tests
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 15
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
-      
+
+      - name: Cache frontend node_modules
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: frontend-deps-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: frontend-deps-${{ runner.os }}-
+
       - name: Install dependencies
         run: cd frontend && npm ci
-      
+
       - name: Run frontend tests
-        run: cd frontend && npm test
-        continue-on-error: true
-      
+        run: cd frontend && npx vitest run --pool=forks --reporter=verbose 2>&1 | tee ../frontend-test-output.txt
+
       - name: Run type check
-        run: cd frontend && npm run type-check || npx tsc --noEmit
-      
+        run: cd frontend && npx tsc --noEmit
+
+      - name: Annotate test results
+        if: always()
+        run: |
+          PASSED=$(grep -oP 'Tests\s+\K\d+(?=\s+passed)' frontend-test-output.txt || echo "0")
+          FILES=$(grep -oP 'Test Files\s+\K\d+(?=\s+passed)' frontend-test-output.txt || echo "0")
+          echo "## 🖥️ Frontend Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Files | $FILES |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests Passed | $PASSED |" >> $GITHUB_STEP_SUMMARY
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: frontend-test-results
-          path: frontend/coverage/
+          path: frontend-test-output.txt
           if-no-files-found: ignore
 
   test-summary:
@@ -75,16 +118,21 @@ jobs:
     runs-on: ubuntu-latest
     needs: [contract-tests, frontend-tests]
     if: always()
-    
+
     steps:
       - name: Check test results
         run: |
-          echo "Contract tests: ${{ needs.contract-tests.result }}"
-          echo "Frontend tests: ${{ needs.frontend-tests.result }}"
-          
+          echo "## 📊 Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Contract Tests | ${{ needs.contract-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend Tests | ${{ needs.frontend-tests.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+
           if [ "${{ needs.contract-tests.result }}" != "success" ]; then
             echo "❌ Contract tests failed"
             exit 1
           fi
-          
-          echo "✅ All tests passed"
+
+          if [ "${{ needs.frontend-tests.result }}" != "success" ]; then
+            echo "❌ Frontend tests failed"
