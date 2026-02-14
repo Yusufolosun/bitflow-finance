@@ -1,0 +1,52 @@
+# Label configuration for actions/labeler
+# Maps file patterns to PR labels
+
+contracts:
+  - changed-files:
+      - any-glob-to-any-file: 'contracts/**'
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file: 'frontend/**'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+          - '**/*.md'
+          - '!CHANGELOG.md'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tests/**'
+          - 'frontend/src/**/*.test.*'
+          - 'frontend/src/**/__tests__/**'
+
+ci-cd:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - '.husky/**'
+
+scripts:
+  - changed-files:
+      - any-glob-to-any-file: 'scripts/**'
+
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '*.json'
+          - '*.toml'
+          - '*.yml'
+          - '*.yaml'
+          - 'settings/**'
+          - 'deployments/**'
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'package-lock.json'
+          - 'frontend/package.json'
+          - 'frontend/package-lock.json'
