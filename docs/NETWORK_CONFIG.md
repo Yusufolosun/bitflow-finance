@@ -1,0 +1,280 @@
+# Network Configuration Guide
+
+> **Configure your application for mainnet, testnet, and local development.**
+
+---
+
+## Networks Overview
+
+| Network | Purpose | Block Time | Explorer |
+|---------|---------|-----------|----------|
+| **Mainnet** | Production | ~10 min | [explorer.hiro.so](https://explorer.hiro.so) |
+| **Testnet** | Staging/QA | ~10 min | [explorer.hiro.so/?chain=testnet](https://explorer.hiro.so/?chain=testnet) |
+| **Devnet** | Local dev | Instant | [localhost:8000](http://localhost:8000) |
+| **Simnet** | Unit tests | Instant | N/A (in-memory) |
+
+---
+
+## Contract Addresses
+
+### Mainnet
+
+```typescript
+const MAINNET = {
+  contractAddress: 'SP1M46W6CVGAMH3ZJD3TKMY5KCY48HWAZK0DYG193',
+  contractName: 'bitflow-vault-core',
+  apiUrl: 'https://stacks-node-api.mainnet.stacks.co',
+  explorerUrl: 'https://explorer.hiro.so',
+};
+```
+
+### Testnet
+
+```typescript
+const TESTNET = {
+  contractAddress: 'ST1M46W6CVGAMH3ZJD3TKMY5KCY48HWAZK1GA0CF0',
+  contractName: 'bitflow-vault-core',
+  apiUrl: 'https://stacks-node-api.testnet.stacks.co',
+  explorerUrl: 'https://explorer.hiro.so/?chain=testnet',
+};
+```
+
+### Devnet (Local)
+
+```typescript
+const DEVNET = {
+  contractAddress: 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM',
+  contractName: 'bitflow-vault-core',
+  apiUrl: 'http://localhost:3999',
+  explorerUrl: 'http://localhost:8000',
+};
+```
+
+---
+
+## Environment-Based Configuration
+
+### Configuration Module
+
+```typescript
+// config/network.ts
+
+type NetworkId = 'mainnet' | 'testnet' | 'devnet';
+
+interface NetworkConfig {
+  contractAddress: string;
+  contractName: string;
+  apiUrl: string;
+  explorerUrl: string;
+  isProduction: boolean;
+}
+
+const CONFIGS: Record<NetworkId, NetworkConfig> = {
+  mainnet: {
+    contractAddress: 'SP1M46W6CVGAMH3ZJD3TKMY5KCY48HWAZK0DYG193',
+    contractName: 'bitflow-vault-core',
+    apiUrl: 'https://stacks-node-api.mainnet.stacks.co',
+    explorerUrl: 'https://explorer.hiro.so',
+    isProduction: true,
+  },
+  testnet: {
+    contractAddress: 'ST1M46W6CVGAMH3ZJD3TKMY5KCY48HWAZK1GA0CF0',
+    contractName: 'bitflow-vault-core',
+    apiUrl: 'https://stacks-node-api.testnet.stacks.co',
+    explorerUrl: 'https://explorer.hiro.so/?chain=testnet',
+    isProduction: false,
+  },
+  devnet: {
+    contractAddress: 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM',
+    contractName: 'bitflow-vault-core',
+    apiUrl: 'http://localhost:3999',
+    explorerUrl: 'http://localhost:8000',
+    isProduction: false,
+  },
+};
+
+export function getNetworkConfig(): NetworkConfig {
+  const env = process.env.STACKS_NETWORK || 'devnet';
+  const config = CONFIGS[env as NetworkId];
+  if (!config) throw new Error(`Unknown network: ${env}`);
+  return config;
+}
+```
+
+### Environment Variables
+
+```bash
+# .env.development
+STACKS_NETWORK=devnet
+
+# .env.staging
+STACKS_NETWORK=testnet
+
+# .env.production
+STACKS_NETWORK=mainnet
+```
+
+### Vite Configuration
+
+```typescript
+// vite.config.ts (for frontend)
+import { defineConfig, loadEnv } from 'vite';
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd());
+  return {
+    define: {
+      'import.meta.env.STACKS_NETWORK': JSON.stringify(env.STACKS_NETWORK || 'devnet'),
+    },
+  };
+});
+```
+
+---
+
+## Clarinet Configuration
+
+### Devnet Settings
+
+Located at [settings/Devnet.toml](../settings/Devnet.toml):
+
+```toml
+[network]
+name = "devnet"
+
+[accounts.deployer]
+mnemonic = "twice particular affair smile pecan induce wind oil top view cover offer"
+balance = 100_000_000_000_000 # 100M STX
+
+[accounts.wallet_1]
+mnemonic = "sell invite acquire kitten bamboo drastic jelly vivid peace spawn twice guilt"
+balance = 100_000_000_000_000
+
+[accounts.wallet_2]
+mnemonic = "hold excess usual excess ring elephant install account animal idle modify reduce"
+balance = 100_000_000_000_000
+```
+
+### Testnet Settings
+
+Located at [settings/Testnet.toml](../settings/Testnet.toml):
+
+```toml
+[network]
+name = "testnet"
+deployment_fee_rate = 10
+```
+
+### Mainnet Settings
+
+Located at [settings/Mainnet.toml](../settings/Mainnet.toml):
+
+```toml
+[network]
+name = "mainnet"
+deployment_fee_rate = 10
+```
+
+---
+
+## API Endpoints
+
+### Stacks Node API
+
+| Endpoint | Mainnet | Testnet |
+|----------|---------|---------|
+| Node API | `stacks-node-api.mainnet.stacks.co` | `stacks-node-api.testnet.stacks.co` |
+| Read-only calls | `/v2/contracts/call-read/{address}/{name}/{fn}` | Same |
+| Account info | `/v2/accounts/{address}` | Same |
+| Transaction status | `/extended/v1/tx/{txid}` | Same |
+| Block height | `/v2/info` | Same |
+
+### Transaction Status Polling
+
+```typescript
+async function waitForTransaction(txId: string, apiUrl: string): Promise<string> {
+  const maxAttempts = 60;
+  const delayMs = 10_000; // 10 seconds
+
+  for (let i = 0; i < maxAttempts; i++) {
+    const response = await fetch(`${apiUrl}/extended/v1/tx/${txId}`);
+    const data = await response.json();
+
+    if (data.tx_status === 'success') return 'success';
+    if (data.tx_status === 'abort_by_response') return 'failed';
+    if (data.tx_status === 'abort_by_post_condition') return 'post-condition-failed';
+
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+
+  throw new Error('Transaction confirmation timeout');
+}
+```
+
+### Explorer Links
+
+```typescript
+function getExplorerUrl(txId: string, network: 'mainnet' | 'testnet'): string {
+  const base = 'https://explorer.hiro.so';
+  const chain = network === 'testnet' ? '&chain=testnet' : '';
+  return `${base}/txid/${txId}?${chain}`;
+}
+
+function getContractUrl(address: string, name: string, network: 'mainnet' | 'testnet'): string {
+  const base = 'https://explorer.hiro.so';
+  const chain = network === 'testnet' ? '&chain=testnet' : '';
+  return `${base}/txid/${address}.${name}?${chain}`;
+}
+```
+
+---
+
+## Local Development Setup
+
+### Start Devnet
+
+```bash
+# Start the local Stacks devnet
+clarinet devnet start
+
+# In another terminal, deploy contracts
+clarinet deployments apply -p deployments/default.simnet-plan.yaml
+```
+
+### Docker Setup
+
+```bash
+# Using docker-compose for full local environment
+docker-compose up -d
+```
+
+### Verify Deployment
+
+```bash
+# Check if contract is deployed (local)
+curl http://localhost:3999/v2/contracts/source/ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM/bitflow-vault-core
+
+# Check if contract is deployed (testnet)
+curl https://stacks-node-api.testnet.stacks.co/v2/contracts/source/ST1M46W6CVGAMH3ZJD3TKMY5KCY48HWAZK1GA0CF0/bitflow-vault-core
+```
+
+---
+
+## Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Connection refused on localhost:3999 | Devnet not running | Run `clarinet devnet start` |
+| 404 on contract call | Contract not deployed | Deploy with `clarinet deployments apply` |
+| Wrong network in wallet | Wallet pointing to wrong chain | Switch network in wallet settings |
+| Testnet STX needed | No balance for gas | Use [testnet faucet](https://explorer.hiro.so/sandbox/faucet?chain=testnet) |
+| Timeout on transaction | Network congestion | Increase fee or wait longer |
+
+---
+
+## Related Documentation
+
+- [Deployment Guide](DEPLOYMENT.md) — Full deployment procedures
+- [SDK Documentation](SDK.md) — Client library usage
+- [Troubleshooting](TROUBLESHOOTING.md) — Common errors and fixes
+- [Integration Guide](INTEGRATION.md) — Framework integration
