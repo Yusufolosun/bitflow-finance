@@ -1,0 +1,180 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run weekly on Mondays at 06:00 UTC
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Audit root dependencies
+        run: |
+          echo "## Root Dependencies" >> audit-report.txt
+          npm audit --omit=dev 2>&1 | tee -a audit-report.txt || true
+          echo "" >> audit-report.txt
+
+      - name: Audit frontend dependencies
+        run: |
+          cd frontend
+          echo "## Frontend Dependencies" >> ../audit-report.txt
+          npm audit --omit=dev 2>&1 | tee -a ../audit-report.txt || true
+
+      - name: Generate audit summary
+        if: always()
+        run: |
+          echo "## 🔒 Dependency Audit Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          ROOT_VULNS=$(npm audit --json 2>/dev/null | grep -o '"total":[0-9]*' | head -1 | cut -d: -f2 || echo "0")
+          cd frontend
+          FE_VULNS=$(npm audit --json 2>/dev/null | grep -o '"total":[0-9]*' | head -1 | cut -d: -f2 || echo "0")
+          cd ..
+
+          echo "| Package | Vulnerabilities |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|----------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Root | $ROOT_VULNS |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | $FE_VULNS |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-report
+          path: audit-report.txt
+
+  contract-security:
+    name: Contract Security Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for dangerous patterns
+        run: |
+          CONTRACT="contracts/bitflow-vault-core.clar"
+          echo "## Contract Security Analysis" > contract-security.txt
+          echo "" >> contract-security.txt
+          ISSUES=0
+
+          # Check for unwrap-panic usage
+          COUNT=$(grep -c "unwrap-panic" "$CONTRACT" 2>/dev/null || echo "0")
+          if [ "$COUNT" -gt 0 ]; then
+            echo "⚠️ WARN: $COUNT uses of unwrap-panic (may cause runtime panics)" >> contract-security.txt
+            ISSUES=$((ISSUES + 1))
+          else
+            echo "✅ No unwrap-panic usage" >> contract-security.txt
+          fi
+
+          # Check for tx-sender authorization in public functions
+          PUBLIC_FNS=$(grep -n "define-public" "$CONTRACT" | wc -l)
+          AUTH_CHECKS=$(grep -c "tx-sender\|contract-caller" "$CONTRACT" 2>/dev/null || echo "0")
+          echo "📊 $PUBLIC_FNS public functions, $AUTH_CHECKS authorization references" >> contract-security.txt
+
+          # Check for integer overflow protection
+          OVERFLOW=$(grep -c "asserts!\|try!\|unwrap!" "$CONTRACT" 2>/dev/null || echo "0")
+          echo "🛡️ $OVERFLOW safety assertions found" >> contract-security.txt
+
+          # Check error handling completeness
+          ERRORS=$(grep -c "define-constant.*ERR" "$CONTRACT" 2>/dev/null || echo "0")
+          echo "📋 $ERRORS error constants defined" >> contract-security.txt
+
+          # Check for STX transfer safety
+          STX_TRANSFERS=$(grep -c "stx-transfer?" "$CONTRACT" 2>/dev/null || echo "0")
+          echo "💰 $STX_TRANSFERS STX transfer operations" >> contract-security.txt
+
+          echo "" >> contract-security.txt
+          echo "Total issues: $ISSUES" >> contract-security.txt
+          cat contract-security.txt
+
+      - name: Security summary
+        if: always()
+        run: |
+          echo "## 🛡️ Contract Security Review" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          cat contract-security.txt >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload security report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-security-report
+          path: contract-security.txt
+
+  secret-scanning:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Scan for hardcoded secrets
+        run: |
+          echo "Scanning for potential secrets..."
+          FOUND=0
+
+          # Check for private keys
+          if grep -rn "private.*key.*=.*['\"][a-fA-F0-9]\{64\}" --include="*.ts" --include="*.tsx" --include="*.js" \
+            --exclude-dir=node_modules --exclude-dir=.git . 2>/dev/null; then
+            echo "❌ Potential private key found!"
+            FOUND=1
+          fi
+
+          # Check for mnemonic phrases
+          if grep -rn "mnemonic.*=.*['\"]" --include="*.ts" --include="*.tsx" --include="*.js" \
+            --exclude-dir=node_modules --exclude-dir=.git . 2>/dev/null; then
+            echo "⚠️ Potential mnemonic phrase found!"
+            FOUND=1
+          fi
+
+          # Check for API keys in code (not env vars)
+          if grep -rn "api[_-]key.*=.*['\"][a-zA-Z0-9]" --include="*.ts" --include="*.tsx" --include="*.js" \
+            --exclude-dir=node_modules --exclude-dir=.git --exclude="*.test.*" . 2>/dev/null; then
+            echo "⚠️ Potential API key in source code!"
+            FOUND=1
+          fi
+
+          if [ "$FOUND" -eq 0 ]; then
+            echo "✅ No hardcoded secrets detected"
+          fi
+
+      - name: Check .gitignore coverage
+        run: |
+          echo "Checking .gitignore for sensitive patterns..."
+          MISSING=0
+          for pattern in ".env" ".env.local" "*.pem" "*.key" "node_modules"; do
+            if grep -q "$pattern" .gitignore 2>/dev/null; then
+              echo "✅ $pattern is ignored"
+            else
+              echo "⚠️ $pattern is NOT in .gitignore"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+
+          if [ "$MISSING" -gt 0 ]; then
+            echo "⚠️ $MISSING patterns missing from .gitignore"
+          fi
