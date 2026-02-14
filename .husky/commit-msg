@@ -1,0 +1,73 @@
+#!/bin/sh
+# Commit message linting hook
+# Enforces conventional commit format:
+#   type(scope?): description
+#
+# Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, ops, revert
+
+set -e
+
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(head -1 "$COMMIT_MSG_FILE")
+
+# Skip merge commits
+if echo "$COMMIT_MSG" | grep -qE '^Merge '; then
+  exit 0
+fi
+
+# Skip revert commits
+if echo "$COMMIT_MSG" | grep -qE '^Revert '; then
+  exit 0
+fi
+
+# Conventional commit pattern
+# type(optional-scope): description
+PATTERN='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|ops|revert)(\([a-z0-9-]+\))?!?: .{1,72}$'
+
+if ! echo "$COMMIT_MSG" | grep -qE "$PATTERN"; then
+  echo ""
+  echo "❌ Invalid commit message format!"
+  echo ""
+  echo "  Your message: $COMMIT_MSG"
+  echo ""
+  echo "  Expected format: type(scope?): description"
+  echo ""
+  echo "  Valid types:"
+  echo "    feat     — New feature"
+  echo "    fix      — Bug fix"
+  echo "    docs     — Documentation only"
+  echo "    style    — Code style (formatting, semicolons, etc.)"
+  echo "    refactor — Code change that neither fixes nor adds"
+  echo "    perf     — Performance improvement"
+  echo "    test     — Adding or updating tests"
+  echo "    build    — Build system or dependencies"
+  echo "    ci       — CI/CD configuration"
+  echo "    chore    — Maintenance tasks"
+  echo "    ops      — Operational scripts/tooling"
+  echo "    revert   — Revert a previous commit"
+  echo ""
+  echo "  Examples:"
+  echo "    feat(vault): add flash loan protection"
+  echo "    fix: correct interest rate calculation"
+  echo "    docs: update API reference"
+  echo "    test(liquidation): add boundary tests"
+  echo ""
+  echo "  Rules:"
+  echo "    - First line max 72 characters"
+  echo "    - Use imperative mood (add, not added)"
+  echo "    - No period at end of subject"
+  echo "    - Use ! before : for breaking changes"
+  echo ""
+  exit 1
+fi
+
+# Check for period at end
+if echo "$COMMIT_MSG" | grep -qE '\.$'; then
+  echo "⚠️  Warning: Commit message ends with a period. Convention is to omit it."
+fi
+
+# Check subject length
+MSG_LENGTH=$(echo "$COMMIT_MSG" | wc -c)
+if [ "$MSG_LENGTH" -gt 72 ]; then
+  echo "⚠️  Warning: First line is $MSG_LENGTH chars. Keep under 72 for best display."
+fi
