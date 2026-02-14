@@ -369,6 +369,95 @@ Detailed scenarios for when transactions fail on-chain.
 
 ---
 
+## Wallet Connection Issues
+
+Problems connecting or maintaining a wallet connection.
+
+### Wallet popup doesn't appear
+
+**Symptom:** You click "Connect Wallet" but nothing happens.
+
+**Possible causes:**
+1. **Wallet extension not installed** — Install [Leather](https://leather.io) or [Xverse](https://xverse.app)
+2. **Extension disabled** — Check your browser's extension manager (chrome://extensions)
+3. **Popup blocked** — Your browser may be blocking the wallet popup. Allow popups for the BitFlow site
+4. **Multiple wallet extensions** — If you have both Leather and Xverse, the app picks the first detected. Try disabling one
+
+**Fix:**
+1. Verify the wallet extension icon appears in your browser toolbar
+2. Click the wallet extension icon directly to make sure it opens
+3. Try the connect button again
+4. If using Brave browser, check Shields settings — they can block wallet popups
+
+### Wallet connects but shows wrong address
+
+**Symptom:** The displayed address doesn't match what you expect.
+
+**Cause:** You may have multiple accounts in your wallet.
+
+**Fix:**
+1. Open your wallet extension
+2. Switch to the correct account
+3. Disconnect from BitFlow and reconnect
+4. The app uses whichever account is currently active in the wallet
+
+### Wallet disconnects unexpectedly
+
+**Symptom:** You were connected, but after navigating or waiting, the app shows "Connect Wallet" again.
+
+**Cause:** Session expired or browser cleared storage.
+
+**Fix:**
+1. Click "Connect Wallet" again — it should reconnect instantly
+2. If using incognito/private mode, sessions don't persist across page reloads
+3. Check that your browser isn't set to clear site data on close
+4. Some privacy extensions (uBlock Origin, Privacy Badger) can interfere with session storage
+
+### "User rejected the connection request"
+
+**Symptom:** Error message after the wallet popup appeared.
+
+**Cause:** You clicked "Cancel" or "Deny" in the wallet popup.
+
+**Fix:** Simply try connecting again and click "Approve" or "Connect" in the wallet popup.
+
+### Leather wallet not detected
+
+**Symptom:** The connect button only shows Xverse, or no wallet options.
+
+**Fix:**
+1. Make sure Leather is installed and enabled
+2. Refresh the page after installing or enabling the extension
+3. Leather works on Chrome, Brave, Firefox, and Edge
+4. Try going to https://leather.io to verify the extension is working
+
+### Xverse wallet not detected
+
+**Symptom:** Similar to above but for Xverse.
+
+**Fix:**
+1. Xverse is primarily a mobile wallet but has a browser extension
+2. Install the Xverse browser extension from your browser's extension store
+3. Refresh the page after installation
+4. Xverse supports Chrome and Brave browsers
+
+### Connected but balance shows 0
+
+**Symptom:** Wallet is connected and address is visible, but STX balance shows 0.
+
+**Possible causes:**
+1. **New wallet** — You haven't received any STX yet
+2. **Wrong network** — Wallet is on testnet but app expects mainnet
+3. **API delay** — Balance hasn't loaded yet
+
+**Fix:**
+1. Check your balance directly on the [Stacks Explorer](https://explorer.hiro.so) by searching your address
+2. Verify your wallet is on Mainnet
+3. Wait 10 seconds for the balance to load
+4. If your wallet is new, purchase STX from an exchange and transfer it
+
+---
+
 ## Related Documentation
 
 - [Error Codes Reference](ERRORS.md) — All error codes explained
