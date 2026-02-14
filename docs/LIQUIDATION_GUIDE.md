@@ -275,6 +275,197 @@ A: Your full deposit minus the amount you borrowed. For example, deposit 15 STX,
 
 ---
 
+## Real Scenarios
+
+Five example cases that illustrate different liquidation situations.
+
+### Scenario 1: The Maximum Borrower
+
+**Alice** deposits 30 STX and borrows the maximum: 20 STX at 5% APR for 90 days.
+
+```
+Day 0:
+  Deposit:       30.000 STX
+  Debt:          20.000 STX
+  Health Factor: 150.0%  ← Right at the boundary
+
+Day 45:
+  Interest:       0.123 STX
+  Debt:          20.123 STX
+  Health Factor: 149.1%  ← Sliding into warning
+
+Day 75:
+  Interest:       0.205 STX
+  Debt:          20.205 STX
+  Health Factor: 148.5%
+
+Day 90 (term end):
+  Interest:       0.247 STX
+  Debt:          20.247 STX
+  Health Factor: 148.2%
+```
+
+**Result:** Alice doesn't get liquidated because interest alone doesn't push her below 110% in 90 days. However, she's been in the warning zone the entire time — risky.
+
+**Lesson:** Borrowing the maximum is stressful but survivable for short terms at low rates.
+
+### Scenario 2: The High-Rate Borrower
+
+**Bob** deposits 15 STX and borrows 9 STX at 50% APR (rate = 5000) for 365 days.
+
+```
+Day 0:
+  Deposit:       15.000 STX
+  Debt:           9.000 STX
+  Health Factor: 166.7%
+
+Day 90:
+  Interest:       1.110 STX
+  Debt:          10.110 STX
+  Health Factor: 148.4%  ← Warning zone
+
+Day 180:
+  Interest:       2.219 STX
+  Debt:          11.219 STX
+  Health Factor: 133.7%  ← Deep warning
+
+Day 270:
+  Interest:       3.329 STX
+  Debt:          12.329 STX
+  Health Factor: 121.7%  ← Approaching danger
+
+Day 310 (approx):
+  Interest:       3.822 STX
+  Debt:          12.822 STX
+  Health Factor: 117.0%  ← Critical
+
+Day 340 (approx):
+  Interest:       4.192 STX
+  Debt:          13.192 STX
+  Health Factor: 113.7%  ← Near liquidation
+
+~Day 370:
+  Interest:       4.562 STX
+  Debt:          13.562 STX
+  Health Factor: 110.6%  ← Just above threshold
+```
+
+**Result:** Bob barely avoids liquidation by the end of his 365-day term, but is extremely close. If a liquidator checks at the right moment with the right price input, Bob could be liquidated.
+
+**Lesson:** High interest rates are dangerous for long-term loans. Bob should have used a lower rate or shorter term.
+
+### Scenario 3: The Early Repayer
+
+**Carol** deposits 20 STX and borrows 12 STX at 8% APR for 90 days.
+
+```
+Day 0:
+  Health Factor: 166.7%
+
+Day 15:
+  Interest accrued: 0.040 STX
+  Carol checks dashboard: health factor = 166.3%
+  Carol decides to repay early.
+  
+  Total repayment: 12.040 STX
+  Carol pays from wallet balance.
+  
+Day 15 (after repayment):
+  Deposit: 20 STX (now unlocked)
+  Loan: none
+  Risk: zero
+```
+
+**Result:** Carol played it safe. She repaid after 15 days, paid only 0.040 STX in interest, and never entered the warning zone.
+
+**Lesson:** Early repayment is the safest strategy. Interest cost is minimal for short durations.
+
+### Scenario 4: The Liquidation Event
+
+**Dave** deposits 10 STX and borrows 6 STX at 10% APR for 365 days.
+
+```
+Day 0:
+  Deposit:       10.000 STX
+  Debt:           6.000 STX
+  Health Factor: 166.7%
+
+Day 200:
+  Interest:       0.329 STX
+  Debt:           6.329 STX  
+  Health Factor: 158.0%
+  
+Dave stops checking the dashboard...
+
+Day 350:
+  Interest:       0.575 STX
+  Debt:           6.575 STX
+  Health Factor: 152.1%
+  
+Dave is still not monitoring...
+
+Hypothetical: A liquidator provides a price that calculates 
+Dave's health factor below 110%.
+
+Liquidator executes:
+  Total debt:          6.575 STX
+  Liquidator bonus:    0.329 STX (5%)
+  Liquidator pays:     6.904 STX
+  Liquidator receives: 10.000 STX (Dave's collateral)
+  Liquidator profit:   3.096 STX
+
+Dave's result:
+  Deposit: 0 STX (seized)
+  Loan: deleted
+  Wallet: still has the 6 STX he borrowed
+  Net loss: 10 - 6 = 4 STX + 0.575 interest he avoided paying
+```
+
+**Lesson:** Not monitoring your position is dangerous. Dave lost 4 STX because he forgot about his loan.
+
+### Scenario 5: The Smart Collateral Manager
+
+**Eve** deposits 50 STX and borrows 20 STX at 5% APR for 90 days. She actively manages her position.
+
+```
+Day 0:
+  Deposit:       50.000 STX
+  Debt:          20.000 STX
+  Health Factor: 250.0%  ← Very safe
+
+Day 30:
+  Interest:       0.082 STX
+  Debt:          20.082 STX
+  Health Factor: 248.9%
+  Eve checks: "Still very safe."
+
+Day 60:
+  Interest:       0.164 STX
+  Debt:          20.164 STX
+  Health Factor: 248.0%
+  Eve checks: "Dropping slowly, but fine."
+
+Day 85 (5 days before due):
+  Interest:       0.233 STX
+  Debt:          20.233 STX
+  Health Factor: 247.1%
+  Eve decides to repay.
+
+  Total repayment: 20.233 STX
+  Eve pays from wallet.
+
+After repayment:
+  Deposit: 50 STX (unlocked)
+  Eve withdraws 50 STX.
+  Net cost: only 0.233 STX in interest.
+```
+
+**Result:** Eve started with a safe buffer (250%), monitored regularly, and repaid on time. Her only cost was 0.233 STX in interest — less than 1.2% of her deposit.
+
+**Lesson:** Conservative borrowing + regular monitoring + timely repayment = lowest cost and zero liquidation risk.
+
+---
+
 ## Related Documentation
 
 - [Health Factor Guide](HEALTH_FACTOR_GUIDE.md) — Deep dive into health factors
