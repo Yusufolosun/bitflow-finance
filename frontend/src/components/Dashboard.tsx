@@ -12,6 +12,7 @@ import { TransactionHistory } from './TransactionHistory';
 import { NetworkIndicator } from './NetworkIndicator';
 import { formatSTX } from '../utils/formatters';
 import { ACTIVE_NETWORK } from '../config/contracts';
+import { useProtocolStats } from '../hooks/useProtocolStats';
 
 /**
  * Dashboard Component
@@ -20,12 +21,13 @@ import { ACTIVE_NETWORK } from '../config/contracts';
 export const Dashboard: React.FC = () => {
   const { address, balance, userSession } = useAuth();
   const vault = useVault(userSession, address);
+  const { stats: protocolStats, isLoading: statsLoading, lastUpdated: statsLastUpdated, refresh: refreshStats } = useProtocolStats(30000);
 
-  // Protocol stats
-  const [totalValueLocked, setTotalValueLocked] = useState(0);
-  const [totalBorrowed, setTotalBorrowed] = useState(0);
-  const [totalRepaid, setTotalRepaid] = useState(0);
-  const [activeUsers, setActiveUsers] = useState(0);
+  // Protocol stats derived from hook
+  const totalValueLocked = protocolStats?.totalDeposits ?? 0;
+  const totalBorrowed = protocolStats?.totalBorrowed ?? 0;
+  const totalRepaid = protocolStats?.totalRepaid ?? 0;
+  const activeUsers = protocolStats?.activeLoans ?? 0;
 
   // User portfolio
   const [userDeposit, setUserDeposit] = useState(0);
@@ -34,22 +36,7 @@ export const Dashboard: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
 
-  // Fetch protocol stats
-  useEffect(() => {
-    const fetchProtocolStats = async () => {
-      // In a real implementation, these would come from read-only contract calls
-      // For now, using placeholder values
-      setTotalValueLocked(125000);
-      setTotalBorrowed(45000);
-      setTotalRepaid(12000);
-      setActiveUsers(156);
-    };
-
-    fetchProtocolStats();
-    // Auto-refresh disabled to prevent rate limiting
-    // const interval = setInterval(fetchProtocolStats, 300000);
-    // return () => clearInterval(interval);
-  }, []);
+  // Protocol stats now fetched via useProtocolStats hook (auto-refreshes every 30s)
 
   // Fetch user portfolio data - DISABLED to prevent rate limiting
   // Data will be fetched after user actions (deposits, borrows, etc.)
@@ -163,34 +150,46 @@ export const Dashboard: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Protocol Stats */}
         <section className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Protocol Overview</h2>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Protocol Overview</h2>
+              {statsLastUpdated && (
+                <p className="text-xs text-gray-400">
+                  Updated {statsLastUpdated.toLocaleTimeString()} · auto-refreshes every 30s
+                </p>
+              )}
+            </div>
+            <button
+              onClick={refreshStats}
+              disabled={statsLoading}
+              className="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
+            >
+              {statsLoading ? 'Loading...' : 'Refresh Stats'}
+            </button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatsCard
               icon={<DollarSign size={24} />}
               label="Total Value Locked"
               value={formatSTX(totalValueLocked) + ' STX'}
-              trend={{ value: 12.5, isPositive: true }}
               color="blue"
             />
             <StatsCard
               icon={<TrendingUp size={24} />}
               label="Total Borrowed"
               value={formatSTX(totalBorrowed) + ' STX'}
-              trend={{ value: 8.3, isPositive: true }}
               color="green"
             />
             <StatsCard
               icon={<Activity size={24} />}
               label="Utilization Rate"
               value={utilizationRate.toFixed(1) + '%'}
-              trend={{ value: 2.1, isPositive: false }}
               color="purple"
             />
             <StatsCard
               icon={<Users size={24} />}
-              label="Active Users"
+              label="Active Loans"
               value={activeUsers.toString()}
-              trend={{ value: 15, isPositive: true }}
               color="orange"
             />
           </div>
