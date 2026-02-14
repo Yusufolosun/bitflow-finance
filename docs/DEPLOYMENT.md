@@ -703,3 +703,11 @@ curl https://api.hiro.so/extended/v1/fee_rate
 For deployment support:
 - **Discord:** [BitFlow Community](https://discord.gg/bitflow)
 - **Email:** deploy@bitflow.finance
+
+---
+
+## Related Documentation
+
+- [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) — Step-by-step checklist
+- [Network Config](NETWORK_CONFIG.md) — Network configuration
+- [Migration Guide](MIGRATION_GUIDE.md) — Version migration

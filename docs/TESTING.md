@@ -752,3 +752,11 @@ Current test suite metrics:
 For testing support:
 - **GitHub Issues:** [Report test issues](https://github.com/bitflow/vault-core/issues)
 - **Discord:** #testing channel
+
+---
+
+## Related Documentation
+
+- [Integration Testing](INTEGRATION_TESTING.md) — Test your integration
+- [Deployment Checklist](DEPLOYMENT_CHECKLIST.md) — Pre-deployment tests
+- [Examples](EXAMPLES.md) — Code examples

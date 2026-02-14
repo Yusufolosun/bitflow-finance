@@ -762,3 +762,11 @@ For more information:
 - [Contract Documentation](./CONTRACTS.md)
 - [Security Guide](./SECURITY.md)
 - [Integration Guide](./INTEGRATION.md)
+
+---
+
+## Related Documentation
+
+- [Architecture Diagrams](ARCHITECTURE_DIAGRAM.md) — Visual ASCII diagrams
+- [Data Model](DATA_MODEL.md) — On-chain data structures
+- [Contracts Guide](CONTRACTS.md) — Contract documentation

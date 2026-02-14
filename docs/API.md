@@ -997,3 +997,12 @@ if (liquidatable) {
 - [Test Suite](../tests/vault-core.test.ts) - Example usage in tests
 - [Stacks Documentation](https://docs.stacks.co/) - Stacks blockchain docs
 - [@stacks/transactions](https://github.com/hirosystems/stacks.js/tree/main/packages/transactions) - Transaction library
+
+---
+
+## Related Documentation
+
+- [API Examples](API_EXAMPLES.md) — Code examples for every function
+- [SDK Documentation](SDK.md) — Client library usage
+- [TypeScript Types](TYPESCRIPT_TYPES.md) — Type definitions
+- [Error Reference](ERROR_REFERENCE.md) — Error codes explained

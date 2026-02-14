@@ -1352,3 +1352,11 @@ For more information, see:
 - [Contract Documentation](./CONTRACTS.md)
 - [API Reference](./API.md)
 - [Test Suite](../tests/vault-core.test.ts)
+
+---
+
+## Related Documentation
+
+- [Error Reference](ERROR_REFERENCE.md) — Complete error code reference  
+- [Troubleshooting](TROUBLESHOOTING.md) — Common issues and solutions
+- [API Examples](API_EXAMPLES.md) — Error handling code patterns
