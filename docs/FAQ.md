@@ -710,7 +710,101 @@ See the [Quick Start Guide](QUICKSTART.md) for a detailed 5-minute walkthrough.
 
 ---
 
-**Document Version:** 1.1.0  
+---
+
+## Advanced Topics
+
+Technical questions for developers and power users.
+
+### Can the contract be upgraded?
+
+No. Clarity smart contracts on Stacks are **immutable** once deployed. The contract at `SP1M46W6CVGAMH3ZJD3TKMY5KCY48HWAZK0DYG193.bitflow-vault-core` cannot be modified.
+
+To introduce new features, a new contract version would be deployed with a migration path:
+
+1. Deploy `bitflow-vault-core-v2` with new logic
+2. Build a migration function or frontend that reads from v1 and writes to v2
+3. Users migrate their positions voluntarily
+4. The old contract continues to work for anyone who doesn't migrate
+
+This is by design — immutability means users can trust that the rules won't change under them.
+
+### How does gas optimization work in Clarity?
+
+Clarity gas costs are based on the number and type of operations. BitFlow v1.0.1 reduced contract size by 78% through these optimizations:
+
+- **Minimal state reads** — Each function reads only the maps it needs
+- **No redundant checks** — Validations are ordered to fail fast
+- **Efficient math** — Integer arithmetic avoids unnecessary intermediate values
+- **Single-map design** — Using `user-deposits` (uint) instead of a complex tuple saves gas
+
+Approximate gas costs per operation:
+
+| Function | Estimated Gas | STX Cost (~) |
+|---|---|---|
+| `deposit` | ~15,000 | ~0.001 STX |
+| `withdraw` | ~18,000 | ~0.001 STX |
+| `borrow` | ~25,000 | ~0.002 STX |
+| `repay` | ~30,000 | ~0.002 STX |
+| `liquidate` | ~35,000 | ~0.003 STX |
+
+### How does the liquidation math work internally?
+
+The liquidation function performs these calculations in order:
+
+```clarity
+;; 1. Calculate accrued interest
+(let ((interest (calculate-interest principal rate blocks-elapsed)))
+
+;; 2. Total debt = principal + interest
+(let ((total-debt (+ principal interest)))
+
+;; 3. Liquidator bonus = 5% of total debt
+(let ((bonus (/ (* total-debt u5) u100)))
+
+;; 4. Liquidator pays: total debt + bonus
+(let ((liquidator-payment (+ total-debt bonus)))
+
+;; 5. Liquidator receives: all of borrower's collateral
+;; 6. Borrower's deposit → 0, loan deleted
+```
+
+The 5% bonus incentivizes liquidators to act quickly, keeping the protocol solvent. Liquidators profit when `collateral > debt + bonus`.
+
+### What are the block time assumptions?
+
+BitFlow uses these constants for time calculations:
+
+| Constant | Value | Meaning |
+|---|---|---|
+| 1 block | ~10 minutes | Average Stacks block time |
+| 1 day | 144 blocks | 24 × 60 / 10 |
+| 1 year | 52,560 blocks | 365 × 144 |
+
+Interest accrues per block using: `interest = principal × rate × blocks / (100 × 52560)`
+
+If Stacks block times change significantly (e.g., after a network upgrade), interest calculations would drift. The contract uses block height, not wall-clock time, so actual elapsed time may differ from expected time.
+
+### Why is there a single-loan-per-user limitation?
+
+This is a deliberate Phase 1 design decision:
+
+**Benefits:**
+- Simpler state management (one map entry per user)
+- Lower gas costs (no array iteration)
+- Easier health factor calculation
+- Reduced smart contract complexity = fewer bugs
+
+**Tradeoffs:**
+- Users can't have multiple loans with different terms
+- Must repay fully before borrowing again
+- No partial liquidation support
+
+**Future plans:** Phase 2 may introduce loan IDs (`map loan-id → loan-data`) to support multiple concurrent loans per user.
+
+---
+
+**Document Version:** 1.2.0  
 **Last Updated:** February 14, 2026
 
 💡 **Tip:** If you can't find your question here, check the [GLOSSARY.md](./GLOSSARY.md) for term definitions, or ask in our Discord community!
